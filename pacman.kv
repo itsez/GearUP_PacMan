@@ -1,9 +1,16 @@
-#this file name must match the name of the App prior to the word App, e.g. PongApp = pong.kv
-#below is the required version of kivy
-#:kivy 1.10.0
-
+<Pac>:
+    size: 50, 50
+    canvas:
+        Color:
+            rgb: 255,238,0
+        Ellipse:
+            pos: self.pos
+            size: self.size
+            angle_start: -60
+            angle_end: 240
 <PacGame>:
- 	canvas:
-		Rectangle:
-			pos: self.center_x - 5, 0
-			size: 10, self.height
+    pac: pac_id
+
+    Pac:
+        id: pac_id
+        center: self.parent.center
