@@ -13,6 +13,10 @@ class Pac(Widget):
     velocity_y = NumericProperty(0)
     speed = NumericProperty(4)
     velocity = ReferenceListProperty(velocity_x, velocity_y)
+    start_angle = NumericProperty(-50)  #-90 = closed mouth
+    end_angle = NumericProperty(230)    # 270 = closed mouth
+    bite_down = 1
+    bite_speed = 1.5
 
     def move(self,keycode='up'):
         if keycode[1] == 'up':
@@ -28,6 +32,18 @@ class Pac(Widget):
             self.velocity_x = self.speed
             self.velocity_y = 0
         self.pos = Vector(self.velocity) + self.pos
+
+    def chomp(self):
+        if self.bite_down == 1:
+            self.end_angle += self.bite_speed
+            self.start_angle += -self.bite_speed
+            if self.end_angle >= 270:
+                self.bite_down = 0
+        else:
+            self.end_angle += -self.bite_speed
+            self.start_angle += self.bite_speed
+            if self.end_angle <= 230:
+                self.bite_down = 1
 
 
 class PacGame(Widget):
@@ -46,6 +62,7 @@ class PacGame(Widget):
         self.pac.move(keycode)
 
     def update(self, dt):
+        self.pac.chomp()
         self.pac.move()
 
 
@@ -53,7 +70,7 @@ class PacmanApp(App):
     def build(self):
         # ordering for game initilization
         game = PacGame()
-        Clock.schedule_interval(game.update, 1.0/60.0)
+        Clock.schedule_interval(game.update, 1.0/60)
         return game
 
 if __name__ == '__main__':
