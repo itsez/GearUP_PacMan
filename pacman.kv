@@ -8,10 +8,52 @@
             size: self.size
             angle_start: (root.start_angle)
             angle_end: (root.end_angle)
+<Ghost>:
+    size: 50,50
+    canvas:
+        Color:
+            rgb: 1,0,0
+        Ellipse:
+            pos: self.pos
+            size: 50,50
+            angle_start: -90
+            angle_end: 90
+        Quad:
+            points: self.center_x - 25, self.center_y, self.center_x -25, self.center_y - 15, self.center_x + 25, self.center_y - 15, self.center_x + 25, self.center_y
+        Triangle:
+            points: self.center_x - 20, self.center_y - 25, self.center_x - 25, self.center_y - 15, self.center_x - 5, self.center_y - 15
+        Triangle:
+            points: self.center_x, self.center_y - 25, self.center_x - 10, self.center_y - 15, self.center_x  + 10, self.center_y - 15
+        Triangle:
+            points: self.center_x + 20, self.center_y - 25, self.center_x + 5, self.center_y - 15, self.center_x  + 25, self.center_y - 15
+        Color:
+            rgb: 1,1,1
+        Ellipse:
+            size: 10,15
+            pos: self.center_x -15, self.center_y
+        Ellipse:
+            size: 10,15
+            pos: self.center_x + 5, self.center_y
+        Color:
+            rgb: 0,0,1
+        Ellipse:
+            size: 5,5
+            pos: self.center_x - 10, self.center_y + 5
+        Ellipse:
+            size: 5,5
+            pos: self.center_x + 10, self.center_y + 5
+
 
 <PacGame>:
     pac: pac_id
+    ghost: red_id
 
     Pac:
         id: pac_id
         center: self.parent.center
+
+    Ghost:
+        id: red_id
+        color: 1,0,0
+        x: self.parent.center_x - 100
+        y: self.parent.center_y + 100

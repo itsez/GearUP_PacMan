@@ -19,46 +19,69 @@ class Pac(Widget):
     bite_down = 1
     bite_speed = 1.5
     rotation = 0
+    dead = False
 
     def move(self,keycode='up'):
-        if keycode[1] == 'up':
-            self.velocity_y = self.speed
-            self.velocity_x = 0
-            self.rotate(90)
-        if keycode[1] == 'down':
-            self.velocity_y = self.speed * -1
-            self.velocity_x = 0
-            self.rotate(-90)
-        if keycode[1] == 'left':
-            self.velocity_x = self.speed * -1
-            self.velocity_y = 0
-            self.rotate(0)
-        if keycode[1] == 'right':
-            self.velocity_x = self.speed
-            self.velocity_y = 0
-            self.rotate(180)
-        self.pos = Vector(self.velocity) + self.pos
+        if not self.dead:
+            if keycode[1] == 'up':
+                self.velocity_y = self.speed
+                self.velocity_x = 0
+                self.rotate(90)
+            if keycode[1] == 'down':
+                self.velocity_y = self.speed * -1
+                self.velocity_x = 0
+                self.rotate(-90)
+            if keycode[1] == 'left':
+                self.velocity_x = self.speed * -1
+                self.velocity_y = 0
+                self.rotate(0)
+            if keycode[1] == 'right':
+                self.velocity_x = self.speed
+                self.velocity_y = 0
+                self.rotate(180)
+            self.pos = Vector(self.velocity) + self.pos
 
     def chomp(self):
-        if self.bite_down == 1:
-            self.end_angle += self.bite_speed
-            self.start_angle += -self.bite_speed
-            if self.end_angle >= 270 + self.rotation:
-                self.bite_down = 0
-        else:
-            self.end_angle += -self.bite_speed
-            self.start_angle += self.bite_speed
-            if self.end_angle <= 230 + self.rotation:
-                self.bite_down = 1
+        if not self.dead:
+            if self.bite_down == 1:
+                self.end_angle += self.bite_speed
+                self.start_angle += -self.bite_speed
+                if self.end_angle >= 270 + self.rotation:
+                    self.bite_down = 0
+            else:
+                self.end_angle += -self.bite_speed
+                self.start_angle += self.bite_speed
+                if self.end_angle <= 230 + self.rotation:
+                    self.bite_down = 1
 
     def rotate(self, val):
         self.rotation = val
         self.start_angle = -50 + val
         self.end_angle = 230 + val
 
+    def death(self):
+        if self.end_angle > 90 + self.rotation:
+            self.start_angle += 1
+            self.end_angle -= 1
+
+
+class Ghost(Widget):
+    velocity_x = NumericProperty(4)
+    velocity_y = NumericProperty(0)
+    speed = NumericProperty(4)
+    velocity = ReferenceListProperty(velocity_x, velocity_y)
+
+    def move(self):
+        if self.center_x > 800:
+            self.velocity_x = -self.speed
+        elif self.center_x < 0:
+            self.velocity_x = self.speed
+        self.pos = Vector(self.velocity) + self.pos
+
 
 class PacGame(Widget):
     pac = ObjectProperty(None)
+    ghost = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(PacGame, self).__init__(**kwargs)
@@ -74,8 +97,14 @@ class PacGame(Widget):
         self.pac.move(keycode)
 
     def update(self, dt):
-        self.pac.chomp()
-        self.pac.move()
+        if not self.pac.dead:
+            self.pac.chomp()
+            self.pac.move()
+            self.ghost.move()
+            if self.pac.collide_widget(self.ghost):
+                self.pac.speed = 0
+                self.pac.dead = True
+        self.pac.death()
 
     def draw_dots(self):
         with self.canvas:
