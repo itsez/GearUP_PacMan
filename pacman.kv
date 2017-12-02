@@ -1,5 +1,5 @@
 <Pac>:
-    size: 50, 50
+    size: 30, 30
     canvas:
         Color:
             rgb: 255,238,0
@@ -9,44 +9,76 @@
             angle_start: (root.start_angle)
             angle_end: (root.end_angle)
 <Ghost>:
-    size: 50,50
+    size: 30,30
     canvas:
         Color:
             rgb: 1,0,0
         Ellipse:
             pos: self.pos
-            size: 50,50
+            size: 30,30
             angle_start: -90
             angle_end: 90
         Quad:
-            points: self.center_x - 25, self.center_y, self.center_x -25, self.center_y - 15, self.center_x + 25, self.center_y - 15, self.center_x + 25, self.center_y
+            points: self.center_x - 15, self.center_y, self.center_x -15, self.center_y - 5, self.center_x + 15, self.center_y - 5, self.center_x + 15, self.center_y
         Triangle:
-            points: self.center_x - 20, self.center_y - 25, self.center_x - 25, self.center_y - 15, self.center_x - 5, self.center_y - 15
+            points: self.center_x - 15, self.center_y - 15, self.center_x - 15, self.center_y - 5, self.center_x - 5, self.center_y - 5
         Triangle:
-            points: self.center_x, self.center_y - 25, self.center_x - 10, self.center_y - 15, self.center_x  + 10, self.center_y - 15
+            points: self.center_x, self.center_y - 15, self.center_x - 10, self.center_y - 5, self.center_x  + 10, self.center_y - 5
         Triangle:
-            points: self.center_x + 20, self.center_y - 25, self.center_x + 5, self.center_y - 15, self.center_x  + 25, self.center_y - 15
+            points: self.center_x + 15, self.center_y - 15, self.center_x + 5, self.center_y - 5, self.center_x  + 15, self.center_y - 5
         Color:
             rgb: 1,1,1
         Ellipse:
-            size: 10,15
-            pos: self.center_x -15, self.center_y
+            size: 5,10
+            pos: self.center_x - 7, self.center_y
         Ellipse:
-            size: 10,15
-            pos: self.center_x + 5, self.center_y
+            size: 5,10
+            pos: self.center_x + 2, self.center_y
         Color:
             rgb: 0,0,1
         Ellipse:
-            size: 5,5
-            pos: self.center_x - 10, self.center_y + 5
+            size: 2,2
+            pos: self.center_x - 5.5, self.center_y + 3.5
         Ellipse:
-            size: 5,5
-            pos: self.center_x + 10, self.center_y + 5
+            size: 2,2
+            pos: self.center_x + 3.5, self.center_y + 3.5
+
+
+<TrackH>
+    size: 800,30
+    canvas:
+        Color:
+            rgb: 1,0,0
+        Rectangle:
+            size: 800,30
+            pos: self.pos
+
+
+<TrackV>
+    size: 30,800
+    canvas:
+        Color:
+            rgb: 1,0,0
+        Rectangle:
+            size: 30,800
+            pos: self.pos
 
 
 <PacGame>:
     pac: pac_id
     ghost: red_id
+    track1H: Track_H_id
+    track1V: Track_V_id
+
+    TrackH:
+        id: Track_H_id
+        x: 0
+        y: self.parent.center_y - 15
+
+    TrackV:
+        id: Track_V_id
+        x: 200
+        y: 0
 
     Pac:
         id: pac_id

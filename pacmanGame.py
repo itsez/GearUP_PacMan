@@ -20,26 +20,40 @@ class Pac(Widget):
     bite_speed = 1.5
     rotation = 0
     dead = False
+    curr_key = ''
+    horizontal = False
+    vertical = False
 
     def move(self,keycode='up'):
         if not self.dead:
-            if keycode[1] == 'up':
+            if keycode[1] == 'up' and self.vertical:
                 self.velocity_y = self.speed
                 self.velocity_x = 0
                 self.rotate(90)
-            if keycode[1] == 'down':
+            if keycode[1] == 'down' and self.vertical:
                 self.velocity_y = self.speed * -1
                 self.velocity_x = 0
                 self.rotate(-90)
-            if keycode[1] == 'left':
+            if keycode[1] == 'left' and self.horizontal:
                 self.velocity_x = self.speed * -1
                 self.velocity_y = 0
                 self.rotate(0)
-            if keycode[1] == 'right':
+            if keycode[1] == 'right' and self.horizontal:
                 self.velocity_x = self.speed
                 self.velocity_y = 0
                 self.rotate(180)
-            self.pos = Vector(self.velocity) + self.pos
+
+    def update_pos(self):
+        if self.x > 800:
+            self.x = 0
+        if self.x < 0:
+            self.x = 800
+        if self.y < 0:
+            self.y = 800
+        if self.y > 800:
+            self.y = 0
+        self.chomp()
+        self.pos = Vector(self.velocity) + self.pos
 
     def chomp(self):
         if not self.dead:
@@ -65,6 +79,14 @@ class Pac(Widget):
             self.end_angle -= 1
 
 
+
+class TrackH(Widget):
+    color = 0,0,0
+
+
+class TrackV(Widget):
+    color = 0
+
 class Ghost(Widget):
     velocity_x = NumericProperty(4)
     velocity_y = NumericProperty(0)
@@ -72,16 +94,18 @@ class Ghost(Widget):
     velocity = ReferenceListProperty(velocity_x, velocity_y)
 
     def move(self):
-        if self.center_x > 800:
-            self.velocity_x = -self.speed
+        if self.center_x + 30 > 800:
+            self.velocity.velocity_x = self.velocity
         elif self.center_x < 0:
-            self.velocity_x = self.speed
+            self.velocity.velocity_x = self.speed
         self.pos = Vector(self.velocity) + self.pos
 
 
 class PacGame(Widget):
     pac = ObjectProperty(None)
     ghost = ObjectProperty(None)
+    track1H = ObjectProperty(None)
+    track1V = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(PacGame, self).__init__(**kwargs)
@@ -98,13 +122,25 @@ class PacGame(Widget):
 
     def update(self, dt):
         if not self.pac.dead:
-            self.pac.chomp()
-            self.pac.move()
+            self.pac.update_pos()
             self.ghost.move()
             if self.pac.collide_widget(self.ghost):
                 self.pac.speed = 0
                 self.pac.dead = True
-        self.pac.death()
+            if self.pac.collide_widget(self.track1H):
+                self.pac.horizontal = True
+                if not self.pac.vertical:
+                    self.pac.y = self.track1H.y
+            else:
+                self.pac.horizontal = False
+            if self.pac.collide_widget(self.track1V):
+                self.pac.vertical = True
+                if not self.pac.horizontal:
+                    self.pac.x = self.track1V.x
+            else:
+                self.pac.vertical = False
+        else:
+            self.pac.death()
 
     def draw_dots(self):
         with self.canvas:
