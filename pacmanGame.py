@@ -48,9 +48,9 @@ class Pac(Widget):
             self.x = 0
         if self.x < 0:
             self.x = 800
-        if self.y < 0:
-            self.y = 800
-        if self.y > 800:
+        if self.y <= 0:
+            self.y = 600
+        if self.y > 600:
             self.y = 0
         self.chomp()
         self.pos = Vector(self.velocity) + self.pos
@@ -79,13 +79,13 @@ class Pac(Widget):
             self.end_angle -= 1
 
 
-
 class TrackH(Widget):
     color = 0,0,0
 
 
 class TrackV(Widget):
     color = 0
+
 
 class Ghost(Widget):
     velocity_x = NumericProperty(4)
@@ -94,6 +94,14 @@ class Ghost(Widget):
     velocity = ReferenceListProperty(velocity_x, velocity_y)
 
     def move(self):
+        if self.x > 800:
+            self.x = 0
+        if self.x < 0:
+            self.x = 800
+        if self.y <= 0:
+            self.y = 600
+        if self.y > 600:
+            self.y = 0
         if self.center_x + 30 > 800:
             self.velocity.velocity_x = self.velocity
         elif self.center_x < 0:
