@@ -1,5 +1,5 @@
 <Pac>:
-    size: 30, 30
+    size: 32, 32
     canvas:
         Color:
             rgb: 255,238,0
@@ -9,7 +9,7 @@
             angle_start: (root.start_angle)
             angle_end: (root.end_angle)
 <Ghost>:
-    size: 30,30
+    size: 32,32
     canvas:
         Color:
             rgb: 1,0,0
@@ -45,44 +45,62 @@
 
 
 <TrackH>
-    size: 800,30
+    size: (root.length),32
     canvas:
         Color:
             rgb: 1,0,0
         Rectangle:
-            size: 800,30
+            size: self.size
             pos: self.pos
 
 
 <TrackV>
-    size: 30,800
+    size: 32,(root.length)
     canvas:
         Color:
-            rgb: 1,0,0
+            rgb: 0,1,0
         Rectangle:
-            size: 30,800
+            size: self.size
             pos: self.pos
 
 
 <PacGame>:
     pac: pac_id
     ghost: red_id
-    track1H: Track_H_id
-    track1V: Track_V_id
+    track1H: Track_1H_id
+    track1V: Track_1V_id
+    track2H: Track_2H_id
+    track2V: Track_2V_id
+    track3H: Track_3H_id
 
     TrackH:
-        id: Track_H_id
-        x: 0
-        y: self.parent.center_y - 15
+        id: Track_1H_id
+        x: 100
+        y: 100
 
     TrackV:
-        id: Track_V_id
+        id: Track_1V_id
         x: 200
-        y: 0
+        y: 100
+
+    TrackH:
+        id: Track_2H_id
+        x: 100
+        y: 160
+    TrackH:
+        id: Track_3H_id
+        x: 400
+        y: 160
+
+    TrackV:
+        id: Track_2V_id
+        x: 400
+        y: 100
 
     Pac:
         id: pac_id
-        center: self.parent.center
+        x: 400
+        y: 100
 
     Ghost:
         id: red_id

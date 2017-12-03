@@ -1,7 +1,7 @@
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty,\
-    ObjectProperty
+    ObjectProperty, VariableListProperty
 from kivy.core.window import Window
 from kivy.vector import Vector
 from kivy.clock import Clock
@@ -53,6 +53,10 @@ class Pac(Widget):
         if self.y > 600:
             self.y = 0
         self.chomp()
+        if not self.horizontal:
+            self.velocity_x = 0
+        if not self.vertical:
+            self.velocity_y = 0
         self.pos = Vector(self.velocity) + self.pos
 
     def chomp(self):
@@ -80,11 +84,16 @@ class Pac(Widget):
 
 
 class TrackH(Widget):
-    color = 0,0,0
+    length = NumericProperty(600)
+    def set_x(self, x):
+        self.x = x
+
+    def set_y(self, y):
+        self.y = y
 
 
 class TrackV(Widget):
-    color = 0
+    length = NumericProperty(200)
 
 
 class Ghost(Widget):
@@ -114,12 +123,18 @@ class PacGame(Widget):
     ghost = ObjectProperty(None)
     track1H = ObjectProperty(None)
     track1V = ObjectProperty(None)
+    track2V = ObjectProperty(None)
+    track2H = ObjectProperty(None)
+    track3H = ObjectProperty(None)
+    h_tracks = ReferenceListProperty(track1H, track2H)
+    v_tracks = ReferenceListProperty(track1V, track2V)
 
     def __init__(self, **kwargs):
         super(PacGame, self).__init__(**kwargs)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
-        self.draw_dots()
+        self.track2H.length = 270
+        self.track3H.length = 270
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -135,18 +150,18 @@ class PacGame(Widget):
             if self.pac.collide_widget(self.ghost):
                 self.pac.speed = 0
                 self.pac.dead = True
-            if self.pac.collide_widget(self.track1H):
-                self.pac.horizontal = True
-                if not self.pac.vertical:
-                    self.pac.y = self.track1H.y
-            else:
-                self.pac.horizontal = False
-            if self.pac.collide_widget(self.track1V):
-                self.pac.vertical = True
-                if not self.pac.horizontal:
-                    self.pac.x = self.track1V.x
-            else:
-                self.pac.vertical = False
+            self.pac.horizontal = False
+            for t in range(2):
+                if self.h_tracks[t].collide_point(self.pac.center_x + (self.pac.velocity_x * 4.5), self.pac.y):
+                    self.pac.horizontal = True
+                    if self.pac.velocity_x:
+                        self.pac.y = self.h_tracks[t].y
+            self.pac.vertical = False
+            for t in range(2):
+                if self.v_tracks[t].collide_point(self.pac.x, self.pac.center_y + (self.pac.velocity_y * 4.5)):
+                    self.pac.vertical = True
+                    if self.pac.velocity_y:
+                        self.pac.x = self.v_tracks[t].x
         else:
             self.pac.death()
 
