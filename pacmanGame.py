@@ -1,7 +1,7 @@
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty,\
-    ObjectProperty, VariableListProperty
+    ObjectProperty
 from kivy.core.window import Window
 from kivy.vector import Vector
 from kivy.clock import Clock
@@ -10,10 +10,8 @@ from kivy.graphics import Color, Ellipse
 
 class Pac(Widget):
     # velocity of the ball on x and y axis
-    velocity_x = NumericProperty(0)
-    velocity_y = NumericProperty(0)
-    speed = NumericProperty(4)
-    velocity = ReferenceListProperty(velocity_x, velocity_y)
+    speed = 2
+    velocity = Vector(0,0)
     start_angle = NumericProperty(-50)  #-90 = closed mouth
     end_angle = NumericProperty(230)    # 270 = closed mouth
     bite_down = 1
@@ -24,53 +22,50 @@ class Pac(Widget):
     horizontal = False
     vertical = False
 
-    def move(self,keycode='up'):
-        if not self.dead:
-            if keycode[1] == 'up' and self.vertical:
-                self.velocity_y = self.speed
-                self.velocity_x = 0
-                self.rotate(90)
-            if keycode[1] == 'down' and self.vertical:
-                self.velocity_y = self.speed * -1
-                self.velocity_x = 0
-                self.rotate(-90)
-            if keycode[1] == 'left' and self.horizontal:
-                self.velocity_x = self.speed * -1
-                self.velocity_y = 0
-                self.rotate(0)
-            if keycode[1] == 'right' and self.horizontal:
-                self.velocity_x = self.speed
-                self.velocity_y = 0
-                self.rotate(180)
+    def change_direction(self, h_tracks, v_tracks):
+        self.horizontal = False
+        self.vertical = False
+        for t in range(2):
+            if h_tracks[t].y == self.y and h_tracks[t].right >= self.x >= h_tracks[t].x:
+                self.horizontal = True
+        for t in range(2):
+            if v_tracks[t].x == self.x and v_tracks[t].top >= self.y >= v_tracks[t].y:
+                self.vertical = True
+        if self.curr_key == 'right' and self.horizontal:
+            self.rotate(180)
+            self.velocity = Vector(1,0)
+        elif self.curr_key == 'left' and self.horizontal:
+            self.rotate(0)
+            self.velocity = Vector(-1,0)
+        elif self.curr_key == 'up' and self.vertical:
+            self.rotate(90)
+            self.velocity = Vector(0,1)
+        elif self.curr_key == 'down' and self.vertical:
+            self.rotate(-90)
+            self.velocity = Vector(0, -1)
 
-    def update_pos(self):
-        if self.x > 800:
-            self.x = 0
-        if self.x < 0:
-            self.x = 800
-        if self.y <= 0:
-            self.y = 600
-        if self.y > 600:
-            self.y = 0
-        self.chomp()
-        if not self.horizontal:
-            self.velocity_x = 0
-        if not self.vertical:
-            self.velocity_y = 0
-        self.pos = Vector(self.velocity) + self.pos
+    def check_walls(self, h_tracks, v_tracks):
+        if self.velocity.x:
+            for t in range(2):
+                if h_tracks[t].collide_widget(self):
+                    if h_tracks[t].center_x + (self.velocity.x * h_tracks[t].width/2) == self.center_x + (self.velocity.x * 16):
+                        self.velocity.x = 0
+                    break
+        if self.velocity.y:
+            for t in range(2):
+                if v_tracks[t].collide_widget(self):
+                    if v_tracks[t].center_y + (self.velocity.y * v_tracks[t].height/2) == self.center_y + (self.velocity.y * 16):
+                        self.velocity.y = 0
+                    break
+
+    def update_pos(self, h_tracks, v_tracks):
+        self.change_direction(h_tracks, v_tracks)
+        self.check_walls(h_tracks, v_tracks)
+        self.pos = (self.velocity * self.speed) + self.pos
 
     def chomp(self):
-        if not self.dead:
-            if self.bite_down == 1:
-                self.end_angle += self.bite_speed
-                self.start_angle += -self.bite_speed
-                if self.end_angle >= 270 + self.rotation:
-                    self.bite_down = 0
-            else:
-                self.end_angle += -self.bite_speed
-                self.start_angle += self.bite_speed
-                if self.end_angle <= 230 + self.rotation:
-                    self.bite_down = 1
+        #TODO
+        pass
 
     def rotate(self, val):
         self.rotation = val
@@ -85,11 +80,6 @@ class Pac(Widget):
 
 class TrackH(Widget):
     length = NumericProperty(600)
-    def set_x(self, x):
-        self.x = x
-
-    def set_y(self, y):
-        self.y = y
 
 
 class TrackV(Widget):
@@ -111,7 +101,7 @@ class Ghost(Widget):
             self.y = 600
         if self.y > 600:
             self.y = 0
-        if self.center_x + 30 > 800:
+        if self.center_x + 32 > 800:
             self.velocity.velocity_x = self.velocity
         elif self.center_x < 0:
             self.velocity.velocity_x = self.speed
@@ -141,27 +131,15 @@ class PacGame(Widget):
         self._keyboard = None
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        self.pac.move(keycode)
+        self.pac.curr_key = keycode[1]
 
     def update(self, dt):
         if not self.pac.dead:
-            self.pac.update_pos()
             self.ghost.move()
             if self.pac.collide_widget(self.ghost):
                 self.pac.speed = 0
                 self.pac.dead = True
-            self.pac.horizontal = False
-            for t in range(2):
-                if self.h_tracks[t].collide_point(self.pac.center_x + (self.pac.velocity_x * 4.5), self.pac.y):
-                    self.pac.horizontal = True
-                    if self.pac.velocity_x:
-                        self.pac.y = self.h_tracks[t].y
-            self.pac.vertical = False
-            for t in range(2):
-                if self.v_tracks[t].collide_point(self.pac.x, self.pac.center_y + (self.pac.velocity_y * 4.5)):
-                    self.pac.vertical = True
-                    if self.pac.velocity_y:
-                        self.pac.x = self.v_tracks[t].x
+            self.pac.update_pos(self.h_tracks, self.v_tracks)
         else:
             self.pac.death()
 
