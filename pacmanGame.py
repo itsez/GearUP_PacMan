@@ -1,7 +1,7 @@
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty,\
-    ObjectProperty
+    ObjectProperty, ListProperty
 from kivy.core.window import Window
 from kivy.vector import Vector
 from kivy.clock import Clock
@@ -9,10 +9,9 @@ from kivy.graphics import Color, Ellipse
 
 
 class Pac(Widget):
-    # velocity of the ball on x and y axis
     speed = 2
-    velocity = Vector(0,0)
-    start_angle = NumericProperty(-50)  #-90 = closed mouth
+    velocity = Vector(0, 0)
+    start_angle = NumericProperty(-50)  # -90 = closed mouth
     end_angle = NumericProperty(230)    # 270 = closed mouth
     bite_down = 1
     bite_speed = 1.5
@@ -25,36 +24,36 @@ class Pac(Widget):
     def change_direction(self, h_tracks, v_tracks):
         self.horizontal = False
         self.vertical = False
-        for t in range(2):
-            if h_tracks[t].y == self.y and h_tracks[t].right >= self.x >= h_tracks[t].x:
+        for t in h_tracks:
+            if t.y == self.y and t.right >= self.x >= t.x:
                 self.horizontal = True
-        for t in range(2):
-            if v_tracks[t].x == self.x and v_tracks[t].top >= self.y >= v_tracks[t].y:
+        for t in v_tracks:
+            if t.x == self.x and t.top >= self.y >= t.y:
                 self.vertical = True
         if self.curr_key == 'right' and self.horizontal:
             self.rotate(180)
-            self.velocity = Vector(1,0)
+            self.velocity = Vector(1, 0)
         elif self.curr_key == 'left' and self.horizontal:
             self.rotate(0)
-            self.velocity = Vector(-1,0)
+            self.velocity = Vector(-1, 0)
         elif self.curr_key == 'up' and self.vertical:
             self.rotate(90)
-            self.velocity = Vector(0,1)
+            self.velocity = Vector(0, 1)
         elif self.curr_key == 'down' and self.vertical:
             self.rotate(-90)
             self.velocity = Vector(0, -1)
 
     def check_walls(self, h_tracks, v_tracks):
         if self.velocity.x:
-            for t in range(2):
-                if h_tracks[t].collide_widget(self):
-                    if h_tracks[t].center_x + (self.velocity.x * h_tracks[t].width/2) == self.center_x + (self.velocity.x * 16):
+            for t in h_tracks:
+                if t.collide_widget(self):
+                    if t.center_x + (self.velocity.x * t.width/2) == self.center_x + (self.velocity.x * 16):
                         self.velocity.x = 0
                     break
         if self.velocity.y:
-            for t in range(2):
-                if v_tracks[t].collide_widget(self):
-                    if v_tracks[t].center_y + (self.velocity.y * v_tracks[t].height/2) == self.center_y + (self.velocity.y * 16):
+            for t in v_tracks:
+                if t.collide_widget(self):
+                    if t.center_y + (self.velocity.y * t.height/2) == self.center_y + (self.velocity.y * 16):
                         self.velocity.y = 0
                     break
 
@@ -64,7 +63,7 @@ class Pac(Widget):
         self.pos = (self.velocity * self.speed) + self.pos
 
     def chomp(self):
-        #TODO
+        # TODO
         pass
 
     def rotate(self, val):
@@ -116,8 +115,8 @@ class PacGame(Widget):
     track2V = ObjectProperty(None)
     track2H = ObjectProperty(None)
     track3H = ObjectProperty(None)
-    h_tracks = ReferenceListProperty(track1H, track2H)
-    v_tracks = ReferenceListProperty(track1V, track2V)
+    h_tracks = ListProperty()
+    v_tracks = ListProperty()
 
     def __init__(self, **kwargs):
         super(PacGame, self).__init__(**kwargs)
@@ -125,6 +124,8 @@ class PacGame(Widget):
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.track2H.length = 270
         self.track3H.length = 270
+        self.h_tracks = [self.track1H, self.track2H, self.track3H]
+        self.v_tracks = [self.track1V, self.track2V]
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -151,7 +152,7 @@ class PacGame(Widget):
 
 class PacmanApp(App):
     def build(self):
-        # ordering for game initilization
+        # ordering for game initialization
         game = PacGame()
         Clock.schedule_interval(game.update, 1.0/60)
         return game
