@@ -73,34 +73,40 @@
     track2V: Track_2V_id
     track3H: Track_3H_id
 
+    canvas:
+        Color:
+            rgb: 0,0,1
+        Rectangle:
+            pos: 40, 40
+            size: 640, 704
     TrackH:
         id: Track_1H_id
-        x: 100
-        y: 100
+        x: self.x
+        y: self.y
 
     TrackV:
         id: Track_1V_id
-        x: 200
-        y: 100
+        x: self.x
+        y: self.y
 
     TrackH:
         id: Track_2H_id
-        x: 100
-        y: 160
+        x: self.x
+        y: self.y
     TrackH:
         id: Track_3H_id
-        x: 400
-        y: 160
+        x: self.x
+        y: self.y
 
     TrackV:
         id: Track_2V_id
-        x: 400
-        y: 100
+        x: self.x
+        y: self.y
 
     Pac:
         id: pac_id
         x: 400
-        y: 100
+        y: 60
 
     Ghost:
         id: red_id

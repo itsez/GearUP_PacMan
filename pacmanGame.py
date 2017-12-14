@@ -1,11 +1,12 @@
 from kivy.app import App
+from kivy.config import Config
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty,\
     ObjectProperty, ListProperty
 from kivy.core.window import Window
 from kivy.vector import Vector
 from kivy.clock import Clock
-from kivy.graphics import Color, Ellipse
+from kivy.graphics import Color, Ellipse, Rectangle
 
 
 class Pac(Widget):
@@ -78,11 +79,10 @@ class Pac(Widget):
 
 
 class TrackH(Widget):
-    length = NumericProperty(600)
-
+    length = NumericProperty(640)
 
 class TrackV(Widget):
-    length = NumericProperty(200)
+    length = NumericProperty(704)
 
 
 class Ghost(Widget):
@@ -122,10 +122,7 @@ class PacGame(Widget):
         super(PacGame, self).__init__(**kwargs)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
-        self.track2H.length = 270
-        self.track3H.length = 270
-        self.h_tracks = [self.track1H, self.track2H, self.track3H]
-        self.v_tracks = [self.track1V, self.track2V]
+        self.build_level()
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -144,6 +141,19 @@ class PacGame(Widget):
         else:
             self.pac.death()
 
+    def build_level(self):
+        self.track1H.pos = (40, 60)
+        self.track2H.length = 4 * 32
+        self.track3H.length = 4 * 32
+        self.track2H.pos = (40, 124)
+        self.track3H.pos = (680 - (4 * 32), 124)
+        self.track1V.pos = (40, 60)
+        self.track1V.length = 3 * 32
+        self.track2V.length = 3 * 32
+        self.track2V.pos = (680 - 32, 60)
+        self.h_tracks = [self.track1H, self.track2H, self.track3H]
+        self.v_tracks = [self.track1V, self.track2V]
+
     def draw_dots(self):
         with self.canvas:
             Color(244,244,230)
@@ -154,6 +164,7 @@ class PacmanApp(App):
     def build(self):
         # ordering for game initialization
         game = PacGame()
+        Window.size = (720, 840)
         Clock.schedule_interval(game.update, 1.0/60)
         return game
 
