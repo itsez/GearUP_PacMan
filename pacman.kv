@@ -67,11 +67,21 @@
 <PacGame>:
     pac: pac_id
     ghost: red_id
-    track1H: Track_1H_id
-    track1V: Track_1V_id
-    track2H: Track_2H_id
-    track2V: Track_2V_id
-    track3H: Track_3H_id
+    track1H: Track_1H
+    track1V: Track_1V
+    track2H: Track_2H
+    track2V: Track_2V
+    track3H: Track_3H
+    track3V: Track_3V
+    track4V: Track_4V
+    track4H: Track_4H
+    track5H: Track_5H
+    track5V: Track_5V
+    track6V: Track_6V
+    track7V: Track_7V
+    track8V: Track_8V
+    track9V: Track_9V
+    track10V: Track_10V
 
     canvas:
         Color:
@@ -80,32 +90,53 @@
             pos: 40, 40
             size: 640, 704
     TrackH:
-        id: Track_1H_id
-        x: self.x
-        y: self.y
+        id: Track_1H
 
     TrackV:
-        id: Track_1V_id
-        x: self.x
-        y: self.y
+        id: Track_1V
 
     TrackH:
-        id: Track_2H_id
-        x: self.x
-        y: self.y
+        id: Track_2H
+
     TrackH:
-        id: Track_3H_id
-        x: self.x
-        y: self.y
+        id: Track_3H
 
     TrackV:
-        id: Track_2V_id
-        x: self.x
-        y: self.y
+        id: Track_2V
+
+    TrackV:
+        id: Track_3V
+
+    TrackV:
+        id: Track_4V
+
+    TrackH:
+        id: Track_4H
+
+    TrackH:
+        id: Track_5H
+
+    TrackV:
+        id: Track_5V
+
+    TrackV:
+        id: Track_6V
+
+    TrackV:
+        id: Track_7V
+
+    TrackV:
+        id: Track_8V
+
+    TrackV:
+        id: Track_9V
+
+    TrackV:
+        id: Track_10V
 
     Pac:
         id: pac_id
-        x: 400
+        x: 40 + (32 *10)
         y: 60
 
     Ghost:

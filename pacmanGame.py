@@ -110,11 +110,6 @@ class Ghost(Widget):
 class PacGame(Widget):
     pac = ObjectProperty(None)
     ghost = ObjectProperty(None)
-    track1H = ObjectProperty(None)
-    track1V = ObjectProperty(None)
-    track2V = ObjectProperty(None)
-    track2H = ObjectProperty(None)
-    track3H = ObjectProperty(None)
     h_tracks = ListProperty()
     v_tracks = ListProperty()
 
@@ -142,17 +137,39 @@ class PacGame(Widget):
             self.pac.death()
 
     def build_level(self):
-        self.track1H.pos = (40, 60)
-        self.track2H.length = 4 * 32
-        self.track3H.length = 4 * 32
-        self.track2H.pos = (40, 124)
-        self.track3H.pos = (680 - (4 * 32), 124)
-        self.track1V.pos = (40, 60)
+        x_marg = 40  #margin size for sides of window
+        y_marg = 60 #margin size for top and bottome
+        self.track1H.pos = (x_marg, y_marg)
+        self.track2H.length = 5 * 32
+        self.track3H.length = 5 * 32
+        self.track2H.pos = (x_marg, 124)
+        self.track3H.pos = (680 - (5 * 32), 124)
+        self.track1V.pos = (x_marg, 60)
         self.track1V.length = 3 * 32
         self.track2V.length = 3 * 32
-        self.track2V.pos = (680 - 32, 60)
-        self.h_tracks = [self.track1H, self.track2H, self.track3H]
-        self.v_tracks = [self.track1V, self.track2V]
+        self.track2V.pos = (680 - 32, y_marg)
+        self.track3V.pos = (x_marg + (32 * 9), y_marg)
+        self.track3V.length = 3 * 32
+        self.track4V.pos = (x_marg + (32 * 11), y_marg)
+        self.track4V.length = 3 * 32
+        self.track4H.pos = (x_marg + (32*7), y_marg + (2 * 32))
+        self.track5H.pos = (x_marg + (32 * 11 ), y_marg + (2 * 32))
+        self.track5H.length = 3 * 32
+        self.track4H.length = 3 * 32
+        self.track5V.pos = (x_marg + (32 * 2), y_marg + (32 * 2))
+        self.track5V.length = 3 * 32
+        self.track6V.pos = (x_marg + (32*4), y_marg + (32 * 2))
+        self.track6V.length = 19 * 32
+        self.track7V.pos = (x_marg + (32 * 7), y_marg + (32 * 2))
+        self.track7V.length = 3 * 32
+        self.track8V.pos = (x_marg + (32 * 13), y_marg + (32 * 2))
+        self.track8V.length = 3 * 32
+        self.track9V.pos = (x_marg + (32 * 15), y_marg + (32 * 2))
+        self.track9V.length = 19 * 32
+        self.track10V.pos = (680 - (3 * 32), y_marg + (32 * 2))
+        self.track10V.length = 3 * 32
+        self.h_tracks = [self.track1H, self.track2H, self.track3H, self.track4H, self.track5H]
+        self.v_tracks = [self.track1V, self.track2V, self.track3V, self.track4V, self.track5V, self.track6V, self.track7V, self.track8V, self.track9V, self.track10V]
 
     def draw_dots(self):
         with self.canvas:
