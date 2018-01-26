@@ -62,6 +62,15 @@ class Pac(Widget):
         self.change_direction(h_tracks, v_tracks)
         self.check_walls(h_tracks, v_tracks)
         self.pos = (self.velocity * self.speed) + self.pos
+        if self.x >= 640:
+            self.x = 40
+            self.rotate(180)
+            self.velocity.x = -self.velocity.x
+
+        if self.x <= 8:
+            self.x = 608
+            self.rotate(180)
+            self.velocity.x = -self.velocity.x
 
     def chomp(self):
         # TODO
@@ -79,10 +88,11 @@ class Pac(Widget):
 
 
 class TrackH(Widget):
-    length = NumericProperty(640)
+    length = NumericProperty(608)
+
 
 class TrackV(Widget):
-    length = NumericProperty(704)
+    length = NumericProperty(672)
 
 
 class Ghost(Widget):
@@ -137,39 +147,112 @@ class PacGame(Widget):
             self.pac.death()
 
     def build_level(self):
-        x_marg = 40  #margin size for sides of window
-        y_marg = 60 #margin size for top and bottome
+        x_marg = 40  # margin size for sides of window
+        y_marg = 60  # margin size for top and bottom
+        map_l = 608  # length of map
+        map_h = 640  # height of map
+        tile = 32    # size of tile
+
         self.track1H.pos = (x_marg, y_marg)
-        self.track2H.length = 5 * 32
-        self.track3H.length = 5 * 32
-        self.track2H.pos = (x_marg, 124)
-        self.track3H.pos = (680 - (5 * 32), 124)
-        self.track1V.pos = (x_marg, 60)
-        self.track1V.length = 3 * 32
-        self.track2V.length = 3 * 32
-        self.track2V.pos = (680 - 32, y_marg)
-        self.track3V.pos = (x_marg + (32 * 9), y_marg)
-        self.track3V.length = 3 * 32
-        self.track4V.pos = (x_marg + (32 * 11), y_marg)
-        self.track4V.length = 3 * 32
-        self.track4H.pos = (x_marg + (32*7), y_marg + (2 * 32))
-        self.track5H.pos = (x_marg + (32 * 11 ), y_marg + (2 * 32))
-        self.track5H.length = 3 * 32
-        self.track4H.length = 3 * 32
-        self.track5V.pos = (x_marg + (32 * 2), y_marg + (32 * 2))
-        self.track5V.length = 3 * 32
-        self.track6V.pos = (x_marg + (32*4), y_marg + (32 * 2))
-        self.track6V.length = 19 * 32
-        self.track7V.pos = (x_marg + (32 * 7), y_marg + (32 * 2))
-        self.track7V.length = 3 * 32
-        self.track8V.pos = (x_marg + (32 * 13), y_marg + (32 * 2))
-        self.track8V.length = 3 * 32
-        self.track9V.pos = (x_marg + (32 * 15), y_marg + (32 * 2))
-        self.track9V.length = 19 * 32
-        self.track10V.pos = (680 - (3 * 32), y_marg + (32 * 2))
-        self.track10V.length = 3 * 32
-        self.h_tracks = [self.track1H, self.track2H, self.track3H, self.track4H, self.track5H]
-        self.v_tracks = [self.track1V, self.track2V, self.track3V, self.track4V, self.track5V, self.track6V, self.track7V, self.track8V, self.track9V, self.track10V]
+        self.track2H.pos = (x_marg, y_marg + (tile * 2))
+        self.track3H.pos = (x_marg + (tile * 6), y_marg + (2 * tile))
+        self.track4H.pos = (x_marg + (tile * 10), y_marg + (tile * 2))
+        self.track5H.pos = (x_marg + map_l - (tile * 5), y_marg + (2 * tile))
+        self.track6H.pos = (x_marg, y_marg + (4 * tile))
+        self.track7H.pos = (x_marg + (tile * 4), y_marg + (4 * tile))
+        self.track8H.pos = (x_marg + map_l - (tile * 3), y_marg + (4 * tile))
+        self.track9H.pos = (x_marg, y_marg + (tile * 6))
+        self.track10H.pos = (x_marg + (tile * 10), y_marg + (tile * 6))
+        self.track11H.pos = (x_marg + (tile * 6), y_marg + (tile * 8))
+        self.track12H.pos = (0, y_marg + (tile * 10))
+        self.track13H.pos = (x_marg + (tile * 12), y_marg + (tile * 10))
+        self.track14H.pos = (x_marg + (tile * 6), y_marg + (tile * 12))
+        self.track15H.pos = (x_marg,y_marg + (tile * 14))
+        self.track16H.pos = (x_marg + (tile * 6), y_marg + (tile * 14))
+        self.track17H.pos = (x_marg + (tile * 10), y_marg + (tile * 14))
+        self.track18H.pos = (x_marg + (tile * 14), y_marg + (tile * 14))
+        self.track19H.pos = (x_marg, y_marg + (tile * 16))
+        self.track20H.pos = (x_marg, y_marg + map_h - tile)
+        self.track21H.pos = (x_marg + (tile * 10), y_marg + map_h - tile)
+        self.track1H.length = map_l
+        self.track2H.length = 5 * tile
+        self.track3H.length = 3 * tile
+        self.track4H.length = 3 * tile
+        self.track5H.length = 5 * tile
+        self.track6H.length = 3 * tile
+        self.track7H.length = 11 * tile
+        self.track8H.length = 3 * tile
+        self.track9H.length = 9 * tile
+        self.track10H.length = 9 * tile
+        self.track11H.length = 7 * tile
+        self.track12H.length = 7 * tile + x_marg
+        self.track13H.length = 7 * tile + x_marg
+        self.track14H.length = 7 * tile
+        self.track15H.length = 5 * tile
+        self.track16H.length = 3 * tile
+        self.track17H.length = 3 * tile
+        self.track18H.length = 5 * tile
+        self.track19H.length = map_l
+        self.track20H.length = 9 * tile
+        self.track21H.length = 9 * tile
+
+        self.track1V.pos = (x_marg, y_marg)
+        self.track2V.pos = (x_marg + (tile * 8), y_marg)
+        self.track3V.pos = (x_marg + (tile * 10), y_marg)
+        self.track4V.pos = (x_marg + map_l - tile, y_marg)
+        self.track5V.pos = (x_marg + (tile * 2), y_marg + (tile * 2))
+        self.track6V.pos = (x_marg + (tile * 4), y_marg + (tile * 2))
+        self.track7V.pos = (x_marg + (tile * 6), y_marg + (tile * 2))
+        self.track8V.pos = (x_marg + (tile * 12), y_marg + (tile * 2))
+        self.track9V.pos = (x_marg + (tile * 14), y_marg + (tile * 2))
+        self.track10V.pos = (x_marg + map_l - (3 * tile), y_marg + (tile * 2))
+        self.track11V.pos = (x_marg, y_marg + (tile * 4))
+        self.track12V.pos = (x_marg + (tile * 8), y_marg + (tile * 4))
+        self.track13V.pos = (x_marg + (tile * 10), y_marg + (tile * 4))
+        self.track14V.pos = (x_marg + map_l - tile, y_marg + (tile * 4))
+        self.track15V.pos = (x_marg + (tile * 6), y_marg + (tile * 6))
+        self.track16V.pos = (x_marg + (tile * 12), y_marg + (tile * 6))
+        self.track17V.pos = (x_marg + (tile * 8), y_marg + (tile * 12))
+        self.track18V.pos = (x_marg + (tile * 10), y_marg + (tile * 12))
+        self.track19V.pos = (x_marg, y_marg + (tile * 14))
+        self.track20V.pos = (x_marg + (tile * 6), y_marg + (tile * 14))
+        self.track21V.pos = (x_marg + (tile * 12), y_marg + (tile * 14))
+        self.track22V.pos = (x_marg + map_l - tile,y_marg + (tile * 14))
+        self.track23V.pos = (x_marg + (tile * 8), y_marg + map_h - (tile * 4))
+        self.track24V.pos = (x_marg + (tile * 10), y_marg + map_h - (tile * 4))
+        self.track1V.length = 3 * tile
+        self.track2V.length = 3 * tile
+        self.track3V.length = 3 * tile
+        self.track4V.length = 3 * tile
+        self.track5V.length = 3 * tile
+        self.track6V.length = 18 * tile
+        self.track7V.length = 3 * tile
+        self.track8V.length = 3 * tile
+        self.track9V.length = 18 * tile
+        self.track10V.length = 3 * tile
+        self.track11V.length = 3 * tile
+        self.track12V.length = 3 * tile
+        self.track13V.length = 3 * tile
+        self.track14V.length = 3 * tile
+        self.track15V.length = 7 * tile
+        self.track16V.length = 7 * tile
+        self.track17V.length = 3 * tile
+        self.track18V.length = 3 * tile
+        self.track19V.length = 6 * tile
+        self.track20V.length = 3 * tile
+        self.track21V.length = 3 * tile
+        self.track22V.length = 6 * tile
+        self.track23V.length = 4 * tile
+        self.track24V.length = 4 * tile
+
+        self.h_tracks = [self.track1H, self.track2H, self.track3H, self.track4H, self.track5H,self.track6H,
+                         self.track7H, self.track8H, self.track9H, self.track10H, self.track11H, self.track12H,
+                         self.track13H, self.track14H, self.track15H, self.track16H, self.track17H, self.track18H,
+                         self.track19H, self.track20H, self.track21H]
+        self.v_tracks = [self.track1V, self.track2V, self.track3V, self.track4V, self.track5V, self.track6V,
+                         self.track7V, self.track8V, self.track9V, self.track10V, self.track11V, self.track12V,
+                         self.track13V, self.track14V, self.track15V, self.track16V, self.track17V, self.track18V,
+                         self.track19V, self.track20V, self.track21V, self.track22V, self.track23V, self.track24V]
 
     def draw_dots(self):
         with self.canvas:
