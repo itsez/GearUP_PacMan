@@ -21,10 +21,16 @@ class Pac(Widget):
     curr_key = ''
     horizontal = False
     vertical = False
+    m_right = False
+    m_left = False
+    m_up = False
+    m_down = False
+
 
     def change_direction(self, h_tracks, v_tracks):
         self.horizontal = False
         self.vertical = False
+
         for t in h_tracks:
             if t.y == self.y and t.right >= self.x >= t.x:
                 self.horizontal = True
@@ -96,25 +102,54 @@ class TrackV(Widget):
 
 
 class Ghost(Widget):
-    velocity_x = NumericProperty(4)
-    velocity_y = NumericProperty(0)
-    speed = NumericProperty(4)
-    velocity = ReferenceListProperty(velocity_x, velocity_y)
+    m_left = False
+    m_right = False
+    m_up = False
+    m_down = False
+    speed = NumericProperty(1)
+    velocity = Vector(1, 0)
+    last_move = ""
+    make_move = False
 
-    def move(self):
-        if self.x > 800:
-            self.x = 0
-        if self.x < 0:
-            self.x = 800
-        if self.y <= 0:
-            self.y = 600
-        if self.y > 600:
-            self.y = 0
-        if self.center_x + 32 > 800:
-            self.velocity.velocity_x = self.velocity
-        elif self.center_x < 0:
-            self.velocity.velocity_x = self.speed
-        self.pos = Vector(self.velocity) + self.pos
+    def move(self,h_tracks,v_tracks, pac_x, pac_y):
+        self.choose_move(pac_x, pac_y)
+        self.check_walls(h_tracks,v_tracks)
+        self.pos = self.velocity + self.pos
+
+    def choose_move(self, pac_x, pac_y):
+        if pac_x < self.center_x - 32 and self.m_left:
+            self.velocity = Vector(-1,0)
+        elif pac_y > self.center_y + 32 and self.m_down:
+            self.velocity = Vector(0,-1)
+        elif pac_x > self.center_x + 32 and self.m_right:
+            self.velocity = Vector(1,0)
+        elif pac_y < self.center_y - 32 and self.m_up:
+            self.velocity = Vector(0,1)
+    def check_walls(self, h_tracks, v_tracks):
+        self.m_left = False
+        self.m_up = False
+        self.m_down = False
+        self.m_right = False
+        if self.velocity.x:
+            for t in h_tracks:
+                if t.collide_widget(self):
+                    if t.center_x + (self.velocity.x * t.width / 2) == self.center_x + (self.velocity.x * 16):
+                        self.velocity.x = 0
+                    if t.x < self.center_x:
+                        self.m_left = True
+                    if t.right > self.center_x:
+                        self.m_right = True
+                    break
+        if self.velocity.y:
+            for t in v_tracks:
+                if t.collide_widget(self):
+                    if t.center_y + (self.velocity.y * t.height / 2) == self.center_y + (self.velocity.y * 16):
+                        self.velocity.y = 0
+                    if t.y < self.center_y:
+                        self.m_down = True
+                    if t.top > self.center_y:
+                        self.m_up = True
+                    break
 
 
 class PacGame(Widget):
@@ -138,7 +173,7 @@ class PacGame(Widget):
 
     def update(self, dt):
         if not self.pac.dead:
-            self.ghost.move()
+            self.ghost.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
             if self.pac.collide_widget(self.ghost):
                 self.pac.speed = 0
                 self.pac.dead = True
