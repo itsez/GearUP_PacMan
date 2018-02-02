@@ -117,59 +117,66 @@ class Ghost(Widget):
     m_down = False
     speed = NumericProperty(1)
     velocity = Vector(1, 0)
-    last_move = ""
+    last_move = "right"
     make_move = False
 
     def move(self, h_tracks, v_tracks, pac_x, pac_y):
-        if self.velocity == Vector(0, 0):
-            self.choose_move(pac_x, pac_y)
-        self.check_walls(h_tracks, v_tracks)
+        self.choose_move(h_tracks, v_tracks, pac_x, pac_y)
+
         self.pos = self.velocity + self.pos
 
-    def choose_move(self, pac_x, pac_y):
-        if pac_x < self.center_x and self.m_left:
-            self.last_move = "left"
-            self.velocity = Vector(-1, 0)
-        elif pac_y > self.center_y and self.m_down:
-            self.last_move = "down"
-            self.velocity = Vector(0, -1)
-        elif pac_x > self.center_x and self.m_right:
-            self.last_move = "right"
-            self.velocity = Vector(1, 0)
-        elif pac_y < self.center_y and self.m_up:
-            self.last_move = "up"
-            self.velocity = Vector(0, 1)
+    def choose_move(self,h_tracks, v_tracks, pac_x, pac_y):
+        self.check_moves(h_tracks, v_tracks)
+        if self.last_move == "up" or self.last_move == "down":
+            if pac_x < self.center_x and self.m_left:
+                self.last_move = "left"
+                self.velocity = Vector(-1, 0)
+            elif pac_x > self.center_x and self.m_right:
+                self.last_move = "right"
+                self.velocity = Vector(1, 0)
+        if self.last_move == "left" or self.last_move == "right":
+            if pac_y < self.center_y and self.m_down:
+                self.last_move = "down"
+                self.velocity = Vector(0, -1)
+            elif pac_y > self.center_y and self.m_up:
+                self.last_move = "up"
+                self.velocity = Vector(0, 1)
 
-    def check_walls(self, h_tracks, v_tracks):
-        self.m_left = False
-        self.m_up = False
+    def check_moves(self, h_tracks, v_tracks):
         self.m_down = False
+        self.m_up = False
+        self.m_left = False
         self.m_right = False
-        if self.velocity.x:
-            for t in h_tracks:
-                if t.collide_widget(self):
-                    if t.center_x + (self.velocity.x * t.width / 2) == self.center_x + (self.velocity.x * 16):
+
+        for t in h_tracks:
+            if t.y == self.y:
+                if t.y == self.y and t.right >= self.x >= t.x:
+                    self.m_right = True
+                    self.m_left = True
+                    if self.x == t.x:
+                        self.m_left = False
+                    if self.right == t.right:
+                        self.m_right = False
+                    if t.center_x + (self.velocity.x * t.width/2) == self.center_x + (self.velocity.x * 16):
                         self.velocity.x = 0
-                    if t.x < self.x:
-                        self.m_left = True
-                    if t.right > self.right:
-                        self.m_right = True
                     break
-        if self.velocity.y:
-            for t in v_tracks:
-                if t.collide_widget(self):
-                    if t.center_y + (self.velocity.y * t.height / 2) == self.center_y + (self.velocity.y * 16):
+        for t in v_tracks:
+            if t.x == self.x:
+                if t.x == self.x and t.top >= self.y >= t.y:
+                    self.m_down = True
+                    self.m_up = True
+                    if t.top == self.top:
+                        self.m_up = False
+                    if self.y == t.y:
+                        self.m_down = False
+                    if t.center_y + (self.velocity.y * t.height/2) == self.center_y + (self.velocity.y * 16):
                         self.velocity.y = 0
-                    if t.y < self.center_y:
-                        self.m_down = True
-                    if t.top > self.center_y:
-                        self.m_up = True
                     break
 
 
 class PacGame(Widget):
     pac = ObjectProperty(None)
-    ghost = ObjectProperty(None)
+    ghost_r = ObjectProperty(None)
     h_tracks = ListProperty()
     v_tracks = ListProperty()
 
@@ -188,8 +195,8 @@ class PacGame(Widget):
 
     def update(self, dt):
         if not self.pac.dead:
-            self.ghost.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
-            if self.pac.collide_widget(self.ghost):
+            self.ghost_r.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
+            if self.pac.collide_widget(self.ghost_r):
                 self.pac.speed = 0
                 self.pac.dead = True
             self.pac.update_pos(self.h_tracks, self.v_tracks)
