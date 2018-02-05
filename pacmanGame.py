@@ -122,11 +122,11 @@ class Ghost(Widget):
 
     def move(self, h_tracks, v_tracks, pac_x, pac_y):
         self.choose_move(h_tracks, v_tracks, pac_x, pac_y)
-
         self.pos = self.velocity + self.pos
 
-    def choose_move(self,h_tracks, v_tracks, pac_x, pac_y):
+    def choose_move(self, h_tracks, v_tracks, pac_x, pac_y):
         self.check_moves(h_tracks, v_tracks)
+
         if self.last_move == "up" or self.last_move == "down":
             if pac_x < self.center_x and self.m_left:
                 self.last_move = "left"
@@ -134,13 +134,28 @@ class Ghost(Widget):
             elif pac_x > self.center_x and self.m_right:
                 self.last_move = "right"
                 self.velocity = Vector(1, 0)
-        if self.last_move == "left" or self.last_move == "right":
+            elif self.velocity == Vector(0,0):
+                if self.m_right:
+                    self.last_move = "right"
+                    self.velocity = Vector(1,0)
+                elif self.m_left:
+                    self.last_move = "left"
+                    self.velocity = Vector(-1,0)
+
+        elif self.last_move == "left" or self.last_move == "right":
             if pac_y < self.center_y and self.m_down:
                 self.last_move = "down"
                 self.velocity = Vector(0, -1)
             elif pac_y > self.center_y and self.m_up:
                 self.last_move = "up"
                 self.velocity = Vector(0, 1)
+            elif self.velocity == Vector(0, 0):
+                if self.m_up:
+                    self.last_move = "up"
+                    self.velocity = Vector(0, 1)
+                elif self.m_down:
+                    self.last_move = "down"
+                    self.velocity = Vector(0, -1)
 
     def check_moves(self, h_tracks, v_tracks):
         self.m_down = False
@@ -179,6 +194,8 @@ class PacGame(Widget):
     ghost_r = ObjectProperty(None)
     h_tracks = ListProperty()
     v_tracks = ListProperty()
+    dots_x = []
+    score = NumericProperty(0)
 
     def __init__(self, **kwargs):
         super(PacGame, self).__init__(**kwargs)
@@ -199,6 +216,19 @@ class PacGame(Widget):
             if self.pac.collide_widget(self.ghost_r):
                 self.pac.speed = 0
                 self.pac.dead = True
+            if self.pac.center_y == 60 + 16:
+                for i in self.dots_x:
+                    if i == self.pac.center_x - 4:
+                        self.score += 1
+                        self.dots_x.remove(i)
+                        with self.canvas:
+                            Color(0,0,0)
+                            Ellipse(pos=(i, 60 + 16 - 4), size=(8, 8))
+                        self.remove_widget(self.pac)
+                        self.add_widget(self.pac)
+                        self.remove_widget(self.ghost_r)
+                        self.add_widget(self.ghost_r)
+
             self.pac.update_pos(self.h_tracks, self.v_tracks)
         else:
             self.pac.death()
@@ -301,6 +331,7 @@ class PacGame(Widget):
         self.track22V.length = 6 * tile
         self.track23V.length = 4 * tile
         self.track24V.length = 4 * tile
+        self.draw_dots()
 
         self.h_tracks = [self.track1H, self.track2H, self.track3H, self.track4H, self.track5H,self.track6H,
                          self.track7H, self.track8H, self.track9H, self.track10H, self.track11H, self.track12H,
@@ -312,9 +343,23 @@ class PacGame(Widget):
                          self.track19V, self.track20V, self.track21V, self.track22V, self.track23V, self.track24V]
 
     def draw_dots(self):
-        with self.canvas:
-            Color(244,244,230)
-            Ellipse(pos=(100, 300), size=(10,10))
+        # 26 on bottom row
+        #
+        x_dot = 40
+        y_dot = 60
+        x_marg = 40  # margin size for sides of window
+        y_marg = 60  # margin size for top and bottom
+        map_l = 608  # length of map
+        map_h = 640  # height of map
+        tile = 32    # size of tile
+        x_dot = x_dot + (tile / 2) - 4
+        y_dot = y_dot + (tile / 2) - 4
+        for i in range(19):
+            with self.canvas:
+                Color(244, 244, 230)
+                Ellipse(pos=(x_dot, y_dot), size=(8, 8))
+                self.dots_x.append(x_dot)
+                x_dot = x_dot + tile
 
 
 class PacmanApp(App):

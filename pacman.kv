@@ -11,6 +11,8 @@
 <Ghost>:
     size: 32,32
     canvas:
+        Color:
+            rgb: 1,0,0
         Ellipse:
             pos: self.pos
             size: 30,30
@@ -257,6 +259,11 @@
     TrackV:
         id: Track_24V
 
+    Label:
+        font_size: 32
+        x: 500
+        top: root.top - 60
+        text: "Score: " + str(root.score)
 
 
     Pac:
@@ -266,6 +273,5 @@
 
     Ghost:
         id: red_id
-        color: 1,0,0
         x: 40 + (32 * 9)
         y: 60 + (32 * 12)
