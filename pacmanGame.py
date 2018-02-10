@@ -521,8 +521,10 @@ class PacGame(Widget):
             self.pinky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
             self.inky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
             self.clyde.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
-            if self.pac.collide_widget(self.blinky) or self.pac.collide_widget(self.pinky) or\
-                    self.pac.collide_widget(self.clyde) or self.pac.collide_widget(self.inky):
+            if self.pac.collide_point(self.blinky.center_x, self.blinky.center_y) or\
+                    self.pac.collide_point(self.pinky.center_x, self.pinky.center_y) or\
+                    self.pac.collide_point(self.clyde.center_x, self.clyde.center_y) or\
+                    self.pac.collide_point(self.inky.center_x, self.inky.center_y):
                 self.pac.speed = 0
                 self.pac.dead = True
             for i in self.dots:
