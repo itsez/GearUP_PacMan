@@ -371,10 +371,30 @@
         top: root.top - 60
         text: "Score: " + str(root.score)
 
+    Label:
+        font_size: 70
+        color: [1,1,0,1]
+        x: 310
+        top: 600
+        text: root.status
+
+    Label:
+        font_size: 20
+        color: [1,1,0,1]
+        x: 310
+        top: 550
+        text: root.status2
+
+
+    Label:
+        font_size: 40
+        x: 200
+        top: root.top - 60
+        text: "Lives: " + str(root.lives)
 
     Pac:
         id: pac_id
-        x: 40 + (32 *9)
+        x: 40 + (32 * 9)
         y: 60 + (32 * 4)
 
     Blinky:

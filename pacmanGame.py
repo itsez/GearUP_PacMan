@@ -2,11 +2,14 @@ from kivy.app import App
 from kivy.config import Config
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty,\
-    ObjectProperty, ListProperty
+    ObjectProperty, ListProperty, StringProperty
 from kivy.core.window import Window
 from kivy.vector import Vector
 from kivy.clock import Clock
 from kivy.graphics import Color, Ellipse, Rectangle
+from kivy.uix.popup import Popup
+from kivy.uix.button import Button
+from kivy.core.text import Label
 
 
 class Pac(Widget):
@@ -95,11 +98,6 @@ class Pac(Widget):
         self.rotation = val
         self.start_angle = -50 + val
         self.end_angle = 230 + val
-
-    def death(self):
-        if self.end_angle > 90 + self.rotation:
-            self.start_angle += 1
-            self.end_angle -= 1
 
 
 class TrackH(Widget):
@@ -498,15 +496,22 @@ class PacGame(Widget):
     inky = ObjectProperty(None)
     clyde = ObjectProperty(None)
     h_tracks = ListProperty()
+    h_tracks_2 = ListProperty()
     v_tracks = ListProperty()
     dots = ListProperty()
     score = NumericProperty(0)
+    respawning = False
+    lives = NumericProperty(3)
+    status = StringProperty()
+    status2 = StringProperty()
+    pause = False
 
     def __init__(self, **kwargs):
         super(PacGame, self).__init__(**kwargs)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.build_level()
+        self.status = "Ready?"
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -516,7 +521,10 @@ class PacGame(Widget):
         self.pac.curr_key = keycode[1]
 
     def update(self, dt):
-        if not self.pac.dead:
+        if self.pause and self.pac.curr_key == "enter":
+            self.respawn_player(0)
+        elif not self.pac.dead and not self.pac.curr_key =='':
+            self.status = ''
             self.blinky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
             self.pinky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
             self.inky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
@@ -525,8 +533,8 @@ class PacGame(Widget):
                     self.pac.collide_point(self.pinky.center_x, self.pinky.center_y) or\
                     self.pac.collide_point(self.clyde.center_x, self.clyde.center_y) or\
                     self.pac.collide_point(self.inky.center_x, self.inky.center_y):
-                self.pac.speed = 0
                 self.pac.dead = True
+                self.lives += -1
             for i in self.dots:
                 if self.pac.collide_point(i[0],i[1]):
                     self.score += 1
@@ -544,13 +552,54 @@ class PacGame(Widget):
                     self.add_widget(self.inky)
                     self.remove_widget(self.clyde)
                     self.add_widget(self.clyde)
-
-                    if not self.dots:
-                        self.win()
-
             self.pac.update_pos(self.h_tracks, self.v_tracks)
+            if not self.dots:
+                self.win()
+        elif not self.pac.curr_key == '':
+            self.status = "You Died"
+            self.death()
+
+    def death(self):
+        if self.pac.end_angle > 90 + self.pac.rotation:
+            self.pac.start_angle += 1
+            self.pac.end_angle -= 1
+        elif self.lives > 0:
+            self.respawn_player()
         else:
-            self.pac.death()
+            self.pause = True
+            self.status = "You Lose"
+            self.status2 = "Press Enter to Restart"
+
+    def respawn_player(self, arg=1):
+        self.pac.pos = 40 + (32 * 9), 60 + (32 * 4)
+        self.blinky.pos = 40 + (32 * 9), 60 + (32 * 12)
+        self.inky.pos = 40 + (32 * 8), 60 + (32 * 10)
+        self.clyde.pos = 40 + (32 * 10), 60 + (32 * 10)
+        self.pinky.pos = 40 + (32 * 9), 60 + (32 * 10)
+        self.blinky.velocity = Vector(1,0)
+        self.pinky.velocity = Vector(0,1)
+        self.inky.velocity = Vector(0,-1)
+        self.clyde.velocity = Vector(0,-1)
+        self.pinky.timer = 400
+        self.inky.timer = 600
+        self.clyde.timer = 800
+        self.pac.rotation = 0
+        self.pac.speed = 2
+        self.blinky.speed = 1
+        self.pinky.speed = 1
+        self.inky.speed = 1
+        self.clyde.speed = 1
+        self.pac.curr_key = ''
+        if arg == 0:
+            self.lives = 3
+            self.draw_dots()
+            self.score = 0
+            self.dots = []
+            self.draw_dots()
+            self.pause = False
+            self.status2 = ''
+        self.status = "Ready?"
+        self.pac.dead = False
 
     def win(self):
         self.pac.speed = 0
@@ -558,6 +607,31 @@ class PacGame(Widget):
         self.pinky.speed = 0
         self.inky.speed = 0
         self.clyde.speed = 0
+
+        self.status = "You Win"
+        self.status2 = "Press Enter to Restart"
+        self.pac.curr_key = ''
+        self.pause = True
+
+    def build_level_new(self):
+        x_marg = 40  # margin size for sides of window
+        y_marg = 60  # margin size for top and bottom
+        map_l = 608  # length of map
+        map_h = 640  # height of map
+        tile = 32  # size of tile
+        h_positions = []
+        h_y_position = []
+
+        h_positions = [(1,1), (2,2), (3,3)]
+
+        for i in h_positions:
+            self.h_tracks.append(TrackH(pos=(x_marg + (tile * i[0]), y_marg + (tile * i[1]))))
+
+        with self.canvas:
+            Color(0, 0, 0)
+            Rectangle(pos=(269, 355), size=(150, 80))
+            Color(1, 1, 1)
+            Rectangle(pos=(325, 435), size=(40, 8))
 
     def build_level(self):
         x_marg = 40  # margin size for sides of window
