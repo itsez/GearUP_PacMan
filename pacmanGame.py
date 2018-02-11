@@ -1,5 +1,4 @@
 from kivy.app import App
-from kivy.config import Config
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty,\
     ObjectProperty, ListProperty, StringProperty
@@ -7,19 +6,14 @@ from kivy.core.window import Window
 from kivy.vector import Vector
 from kivy.clock import Clock
 from kivy.graphics import Color, Ellipse, Rectangle
-from kivy.uix.popup import Popup
-from kivy.uix.button import Button
-from kivy.core.text import Label
 
 
 class Pac(Widget):
     speed = 2
     velocity = Vector(0, 0)
+    rotation = 0
     start_angle = NumericProperty(-50)  # -90 = closed mouth
     end_angle = NumericProperty(230)    # 270 = closed mouth
-    bite_down = 1
-    bite_speed = 1.5
-    rotation = 0
     dead = False
     curr_key = ''
     horizontal = False
@@ -28,6 +22,16 @@ class Pac(Widget):
     m_left = False
     m_up = False
     m_down = False
+    chomp_down = True
+
+    def setup(self):
+        self.pos = 40 + (32 * 9), 60 + (32 * 4)
+        self.dead = False
+        self.rotation = 0
+        self.curr_key = ''
+        self.start_angle = -50
+        self.end_angle = 230
+        self.velocity = Vector(0,0)
 
     def change_direction(self, h_tracks, v_tracks):
 
@@ -89,15 +93,24 @@ class Pac(Widget):
             self.x = 608
             self.rotate(180)
             self.velocity.x = -self.velocity.x
-
-    def chomp(self):
-        # TODO
-        pass
+        self.chomp()
 
     def rotate(self, val):
         self.rotation = val
         self.start_angle = -50 + val
         self.end_angle = 230 + val
+
+    def chomp(self):
+        if self.start_angle == -90 + self.rotation:
+            self.chomp_down = False
+        if self.start_angle == -50 + self.rotation:
+            self.chomp_down = True
+        if self.chomp_down:
+            self.start_angle += -1
+            self.end_angle += 1
+        else:
+            self.end_angle += -1
+            self.start_angle += 1
 
 
 class TrackH(Widget):
@@ -117,6 +130,10 @@ class Blinky(Widget):
     velocity = Vector(1, 0)
     last_move = "right"
     make_move = False
+
+    def setup(self):
+        self.pos = 40 + (32 * 9), 60 + (32 * 12)
+        self.velocity = Vector(1,0)
 
     def move(self, h_tracks, v_tracks, pac_x, pac_y):
         self.choose_move(h_tracks, v_tracks, pac_x, pac_y)
@@ -201,6 +218,11 @@ class Pinky(Widget):
     last_move = "up"
     make_move = False
     timer = 400
+
+    def setup(self):
+        self.pos = 40 + (32 * 9), 60 + (32 * 10)
+        self.velocity = Vector(0,1)
+        self.timer = 400
 
     def move(self, h_tracks, v_tracks, pac_x, pac_y):
         if self.timer > 0:
@@ -301,6 +323,11 @@ class Clyde(Widget):
     make_move = False
     timer = 800
 
+    def setup(self):
+        self.pos = 40 + (32 * 10), 60 + (32 * 10)
+        self.velocity = Vector(0,-1)
+        self.timer = 800
+
     def move(self, h_tracks, v_tracks, pac_x, pac_y):
         if self.timer > 0:
             self.spawning()
@@ -400,6 +427,11 @@ class Inky(Widget):
     make_move = False
     timer = 600
 
+    def setup(self):
+        self.pos = 40 + (32 * 8), 60 + (32 * 10)
+        self.velocity = Vector(0,-1)
+        self.timer = 600
+
     def move(self, h_tracks, v_tracks, pac_x, pac_y):
         if self.timer > 0:
             self.spawning()
@@ -496,22 +528,22 @@ class PacGame(Widget):
     inky = ObjectProperty(None)
     clyde = ObjectProperty(None)
     h_tracks = ListProperty()
-    h_tracks_2 = ListProperty()
     v_tracks = ListProperty()
     dots = ListProperty()
     score = NumericProperty(0)
-    respawning = False
     lives = NumericProperty(3)
-    status = StringProperty()
-    status2 = StringProperty()
-    pause = False
+    status = ObjectProperty()
+    status2 = ObjectProperty()
+    ready_check = True
 
     def __init__(self, **kwargs):
         super(PacGame, self).__init__(**kwargs)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.build_level()
-        self.status = "Ready?"
+        self.status.text = "Ready?"
+        self.redraw(self.status)
+        self.redraw()
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -519,45 +551,48 @@ class PacGame(Widget):
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         self.pac.curr_key = keycode[1]
+        if self.ready_check:
+            self.ready_check = False
 
     def update(self, dt):
-        if self.pause and self.pac.curr_key == "enter":
-            self.respawn_player(0)
-        elif not self.pac.dead and not self.pac.curr_key =='':
-            self.status = ''
-            self.blinky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
-            self.pinky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
-            self.inky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
-            self.clyde.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
-            if self.pac.collide_point(self.blinky.center_x, self.blinky.center_y) or\
-                    self.pac.collide_point(self.pinky.center_x, self.pinky.center_y) or\
-                    self.pac.collide_point(self.clyde.center_x, self.clyde.center_y) or\
-                    self.pac.collide_point(self.inky.center_x, self.inky.center_y):
-                self.pac.dead = True
-                self.lives += -1
-            for i in self.dots:
-                if self.pac.collide_point(i[0],i[1]):
-                    self.score += 1
-                    self.dots.remove(i)
-                    with self.canvas:
-                        Color(0, 0, 0)
-                        Ellipse(pos=(i[0], i[1]), size=(8, 8))
-                    self.remove_widget(self.pac)
-                    self.add_widget(self.pac)
-                    self.remove_widget(self.blinky)
-                    self.add_widget(self.blinky)
-                    self.remove_widget(self.pinky)
-                    self.add_widget(self.pinky)
-                    self.remove_widget(self.inky)
-                    self.add_widget(self.inky)
-                    self.remove_widget(self.clyde)
-                    self.add_widget(self.clyde)
-            self.pac.update_pos(self.h_tracks, self.v_tracks)
-            if not self.dots:
-                self.win()
-        elif not self.pac.curr_key == '':
-            self.status = "You Died"
-            self.death()
+        if not self.ready_check:
+            if self.pac.dead:
+                self.status.text = "You Died"
+                self.redraw(self.status)
+                self.death()
+            elif not self.pac.dead:
+                self.status.text = ''
+                self.redraw(self.status)
+                self.move_ghosts()
+                if self.pac.collide_point(self.blinky.center_x, self.blinky.center_y) or\
+                        self.pac.collide_point(self.pinky.center_x, self.pinky.center_y) or\
+                        self.pac.collide_point(self.clyde.center_x, self.clyde.center_y) or\
+                        self.pac.collide_point(self.inky.center_x, self.inky.center_y):
+                    self.pac.dead = True
+                    self.lives += -1
+                else:
+                    for i in self.dots:
+                        if self.pac.collide_point(i[0],i[1]):
+                            self.score += 1
+                            self.dots.remove(i)
+                            with self.canvas:
+                                Color(0, 0, 0)
+                                Ellipse(pos=(i[0], i[1]), size=(8, 8))
+                            self.redraw()
+                    self.pac.update_pos(self.h_tracks, self.v_tracks)
+                if not self.dots:
+                    self.win()
+
+    def redraw(self, widget=None):
+        if widget:
+            self.remove_widget(widget)
+            self.add_widget(widget)
+        else:
+            self.redraw(self.pac)
+            self.redraw(self.blinky)
+            self.redraw(self.pinky)
+            self.redraw(self.inky)
+            self.redraw(self.clyde)
 
     def death(self):
         if self.pac.end_angle > 90 + self.pac.rotation:
@@ -566,186 +601,82 @@ class PacGame(Widget):
         elif self.lives > 0:
             self.respawn_player()
         else:
-            self.pause = True
-            self.status = "You Lose"
-            self.status2 = "Press Enter to Restart"
+            self.status.text = "You Lose"
+            self.status2.text = "Press Enter to Restart"
+            if self.pac.curr_key == "enter":
+                self.pac.dead = False
+                self.respawn_player(0)
+            self.redraw(self.status)
+            self.redraw(self.status2)
+
+    def move_ghosts(self):
+        self.blinky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
+        self.pinky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
+        self.inky.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
+        self.clyde.move(self.h_tracks, self.v_tracks, self.pac.center_x, self.pac.center_y)
 
     def respawn_player(self, arg=1):
-        self.pac.pos = 40 + (32 * 9), 60 + (32 * 4)
-        self.blinky.pos = 40 + (32 * 9), 60 + (32 * 12)
-        self.inky.pos = 40 + (32 * 8), 60 + (32 * 10)
-        self.clyde.pos = 40 + (32 * 10), 60 + (32 * 10)
-        self.pinky.pos = 40 + (32 * 9), 60 + (32 * 10)
-        self.blinky.velocity = Vector(1,0)
-        self.pinky.velocity = Vector(0,1)
-        self.inky.velocity = Vector(0,-1)
-        self.clyde.velocity = Vector(0,-1)
-        self.pinky.timer = 400
-        self.inky.timer = 600
-        self.clyde.timer = 800
-        self.pac.rotation = 0
-        self.pac.speed = 2
-        self.blinky.speed = 1
-        self.pinky.speed = 1
-        self.inky.speed = 1
-        self.clyde.speed = 1
-        self.pac.curr_key = ''
+        self.inky.setup()
+        self.pinky.setup()
+        self.clyde.setup()
+        self.pac.setup()
+        self.blinky.setup()
         if arg == 0:
             self.lives = 3
             self.draw_dots()
             self.score = 0
             self.dots = []
             self.draw_dots()
-            self.pause = False
-            self.status2 = ''
-        self.status = "Ready?"
-        self.pac.dead = False
+            self.status2.text = ''
+            self.redraw(self.status2)
+        self.redraw(self.status)
+        self.redraw()
+        self.status.text = "Ready?"
+        self.ready_check = True
 
     def win(self):
-        self.pac.speed = 0
-        self.blinky.speed = 0
-        self.pinky.speed = 0
-        self.inky.speed = 0
-        self.clyde.speed = 0
 
-        self.status = "You Win"
-        self.status2 = "Press Enter to Restart"
-        self.pac.curr_key = ''
-        self.pause = True
-
-    def build_level_new(self):
-        x_marg = 40  # margin size for sides of window
-        y_marg = 60  # margin size for top and bottom
-        map_l = 608  # length of map
-        map_h = 640  # height of map
-        tile = 32  # size of tile
-        h_positions = []
-        h_y_position = []
-
-        h_positions = [(1,1), (2,2), (3,3)]
-
-        for i in h_positions:
-            self.h_tracks.append(TrackH(pos=(x_marg + (tile * i[0]), y_marg + (tile * i[1]))))
-
-        with self.canvas:
-            Color(0, 0, 0)
-            Rectangle(pos=(269, 355), size=(150, 80))
-            Color(1, 1, 1)
-            Rectangle(pos=(325, 435), size=(40, 8))
+        self.status.text = "You Win"
+        self.status2.text = "Press Enter to Restart"
+        self.ready_check = True
+        self.redraw(self.status)
+        self.redraw(self.status2)
+        if self.pac.curr_key == "enter":
+            self.pac.dead = False
+            self.respawn_player(0)
 
     def build_level(self):
         x_marg = 40  # margin size for sides of window
         y_marg = 60  # margin size for top and bottom
         map_l = 608  # length of map
         map_h = 640  # height of map
-        tile = 32    # size of tile
+        tile = 32  # size of tile
+        # h_positions = (#tiles x, #tiles y, #tiles length)
+        h_positions = [(0,0,19), (0,2,5), (6,2,3), (10,2,3), (14,2,5), (0,4,3), (4,4,11), (16,4,3), (0,6,9), (10,6,9),
+                       (6,8,7), (-1,10,8), (12,10,8), (6,12,7), (0,14,5), (6,14,3), (10,14,3), (14,14,5), (0,16,19),
+                       (0,19,9), (10,19,9)]
+        v_positions = [(0,0,3),(8,0,3),(10,0,3),(18,0,3),(2,2,3),(4,2,18),(6,2,3),(12,2,3),(14,2,18),(16,2,3), (0,4,3),
+                      (8,4,3),(10,4,3),(18,4,3),(6,6,7), (12,6,7), (8,12,3),(10,12,3),(0,14,6),(6,14,3),(12,14,3),
+                                                          (18,14,6), (8,16,4), (10,16,4)]
 
-        self.track1H.pos = (x_marg, y_marg)
-        self.track2H.pos = (x_marg, y_marg + (tile * 2))
-        self.track3H.pos = (x_marg + (tile * 6), y_marg + (2 * tile))
-        self.track4H.pos = (x_marg + (tile * 10), y_marg + (tile * 2))
-        self.track5H.pos = (x_marg + map_l - (tile * 5), y_marg + (2 * tile))
-        self.track6H.pos = (x_marg, y_marg + (4 * tile))
-        self.track7H.pos = (x_marg + (tile * 4), y_marg + (4 * tile))
-        self.track8H.pos = (x_marg + map_l - (tile * 3), y_marg + (4 * tile))
-        self.track9H.pos = (x_marg, y_marg + (tile * 6))
-        self.track10H.pos = (x_marg + (tile * 10), y_marg + (tile * 6))
-        self.track11H.pos = (x_marg + (tile * 6), y_marg + (tile * 8))
-        self.track12H.pos = (0, y_marg + (tile * 10))
-        self.track13H.pos = (x_marg + (tile * 12), y_marg + (tile * 10))
-        self.track14H.pos = (x_marg + (tile * 6), y_marg + (tile * 12))
-        self.track15H.pos = (x_marg,y_marg + (tile * 14))
-        self.track16H.pos = (x_marg + (tile * 6), y_marg + (tile * 14))
-        self.track17H.pos = (x_marg + (tile * 10), y_marg + (tile * 14))
-        self.track18H.pos = (x_marg + (tile * 14), y_marg + (tile * 14))
-        self.track19H.pos = (x_marg, y_marg + (tile * 16))
-        self.track20H.pos = (x_marg, y_marg + map_h - tile)
-        self.track21H.pos = (x_marg + (tile * 10), y_marg + map_h - tile)
-        self.track1H.length = map_l
-        self.track2H.length = 5 * tile
-        self.track3H.length = 3 * tile
-        self.track4H.length = 3 * tile
-        self.track5H.length = 5 * tile
-        self.track6H.length = 3 * tile
-        self.track7H.length = 11 * tile
-        self.track8H.length = 3 * tile
-        self.track9H.length = 9 * tile
-        self.track10H.length = 9 * tile
-        self.track11H.length = 7 * tile
-        self.track12H.length = 7 * tile + x_marg
-        self.track13H.length = 7 * tile + x_marg
-        self.track14H.length = 7 * tile
-        self.track15H.length = 5 * tile
-        self.track16H.length = 3 * tile
-        self.track17H.length = 3 * tile
-        self.track18H.length = 5 * tile
-        self.track19H.length = map_l
-        self.track20H.length = 9 * tile
-        self.track21H.length = 9 * tile
+        for i in h_positions:
+            # self.h_tracks.append(TrackH(Color=(1,1,1,1),pos=(x_marg + (tile * i[0]), y_marg + (tile * i[1]))))
+            track = TrackH(Color=(1,1,1,1),pos=(x_marg + (tile * i[0]), y_marg + (tile * i[1])))
+            track.length = i[2] * tile
+            self.h_tracks.append(track)
+            self.add_widget(track)
 
-        self.track1V.pos = (x_marg, y_marg)
-        self.track2V.pos = (x_marg + (tile * 8), y_marg)
-        self.track3V.pos = (x_marg + (tile * 10), y_marg)
-        self.track4V.pos = (x_marg + map_l - tile, y_marg)
-        self.track5V.pos = (x_marg + (tile * 2), y_marg + (tile * 2))
-        self.track6V.pos = (x_marg + (tile * 4), y_marg + (tile * 2))
-        self.track7V.pos = (x_marg + (tile * 6), y_marg + (tile * 2))
-        self.track8V.pos = (x_marg + (tile * 12), y_marg + (tile * 2))
-        self.track9V.pos = (x_marg + (tile * 14), y_marg + (tile * 2))
-        self.track10V.pos = (x_marg + map_l - (3 * tile), y_marg + (tile * 2))
-        self.track11V.pos = (x_marg, y_marg + (tile * 4))
-        self.track12V.pos = (x_marg + (tile * 8), y_marg + (tile * 4))
-        self.track13V.pos = (x_marg + (tile * 10), y_marg + (tile * 4))
-        self.track14V.pos = (x_marg + map_l - tile, y_marg + (tile * 4))
-        self.track15V.pos = (x_marg + (tile * 6), y_marg + (tile * 6))
-        self.track16V.pos = (x_marg + (tile * 12), y_marg + (tile * 6))
-        self.track17V.pos = (x_marg + (tile * 8), y_marg + (tile * 12))
-        self.track18V.pos = (x_marg + (tile * 10), y_marg + (tile * 12))
-        self.track19V.pos = (x_marg, y_marg + (tile * 14))
-        self.track20V.pos = (x_marg + (tile * 6), y_marg + (tile * 14))
-        self.track21V.pos = (x_marg + (tile * 12), y_marg + (tile * 14))
-        self.track22V.pos = (x_marg + map_l - tile,y_marg + (tile * 14))
-        self.track23V.pos = (x_marg + (tile * 8), y_marg + map_h - (tile * 4))
-        self.track24V.pos = (x_marg + (tile * 10), y_marg + map_h - (tile * 4))
-        self.track1V.length = 3 * tile
-        self.track2V.length = 3 * tile
-        self.track3V.length = 3 * tile
-        self.track4V.length = 3 * tile
-        self.track5V.length = 3 * tile
-        self.track6V.length = 18 * tile
-        self.track7V.length = 3 * tile
-        self.track8V.length = 3 * tile
-        self.track9V.length = 18 * tile
-        self.track10V.length = 3 * tile
-        self.track11V.length = 3 * tile
-        self.track12V.length = 3 * tile
-        self.track13V.length = 3 * tile
-        self.track14V.length = 3 * tile
-        self.track15V.length = 7 * tile
-        self.track16V.length = 7 * tile
-        self.track17V.length = 3 * tile
-        self.track18V.length = 3 * tile
-        self.track19V.length = 6 * tile
-        self.track20V.length = 3 * tile
-        self.track21V.length = 3 * tile
-        self.track22V.length = 6 * tile
-        self.track23V.length = 4 * tile
-        self.track24V.length = 4 * tile
-
-        self.h_tracks = [self.track1H, self.track2H, self.track3H, self.track4H, self.track5H,self.track6H,
-                         self.track7H, self.track8H, self.track9H, self.track10H, self.track11H, self.track12H,
-                         self.track13H, self.track14H, self.track15H, self.track16H, self.track17H, self.track18H,
-                         self.track19H, self.track20H, self.track21H]
-        self.v_tracks = [self.track1V, self.track2V, self.track3V, self.track4V, self.track5V, self.track6V,
-                         self.track7V, self.track8V, self.track9V, self.track10V, self.track11V, self.track12V,
-                         self.track13V, self.track14V, self.track15V, self.track16V, self.track17V, self.track18V,
-                         self.track19V, self.track20V, self.track21V, self.track22V, self.track23V, self.track24V]
+        for i in v_positions:
+            track = TrackV(Color=(1, 1, 1, 1), pos=(x_marg + (tile * i[0]), y_marg + (tile * i[1])))
+            track.length = i[2] * tile
+            self.v_tracks.append(track)
+            self.add_widget(track)
         self.draw_dots()
 
         with self.canvas:
-            Color(0,0,0)
+            Color(0, 0, 0)
             Rectangle(pos=(269, 355), size=(150, 80))
-            Color(1,1,1)
+            Color(1, 1, 1)
             Rectangle(pos=(325, 435), size=(40, 8))
 
     def draw_dots(self):
@@ -794,6 +725,7 @@ class PacmanApp(App):
         # ordering for game initialization
         game = PacGame()
         Window.size = (720, 840)
+        Window.top = 100
         Clock.schedule_interval(game.update, 20/60)
         return game
 

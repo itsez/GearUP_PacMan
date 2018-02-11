@@ -173,53 +173,8 @@
     pinky: pink_id
     clyde: orange_id
     inky: blue_id
-
-    track1H: Track_1H
-    track2H: Track_2H
-    track3H: Track_3H
-    track4H: Track_4H
-    track5H: Track_5H
-    track6H: Track_6H
-    track7H: Track_7H
-    track8H: Track_8H
-    track9H: Track_9H
-    track10H: Track_10H
-    track11H: Track_11H
-    track12H: Track_12H
-    track13H: Track_13H
-    track14H: Track_14H
-    track15H: Track_15H
-    track16H: Track_16H
-    track17H: Track_17H
-    track18H: Track_18H
-    track19H: Track_19H
-    track20H: Track_20H
-    track21H: Track_21H
-
-    track1V: Track_1V
-    track2V: Track_2V
-    track3V: Track_3V
-    track4V: Track_4V
-    track5V: Track_5V
-    track6V: Track_6V
-    track7V: Track_7V
-    track8V: Track_8V
-    track9V: Track_9V
-    track10V: Track_10V
-    track11V: Track_11V
-    track12V: Track_12V
-    track13V: Track_13V
-    track14V: Track_14V
-    track15V: Track_15V
-    track16V: Track_16V
-    track17V: Track_17V
-    track18V: Track_18V
-    track19V: Track_19V
-    track20V: Track_20V
-    track21V: Track_21V
-    track22V: Track_22V
-    track23V: Track_23V
-    track24V: Track_24V
+    status: status_id
+    status2: status_id2
 
     canvas:
         Color:
@@ -230,140 +185,6 @@
         Rectangle:
             pos: 40, 60
             size: 608, 640
-    TrackH:
-        id: Track_1H
-
-    TrackV:
-        id: Track_1V
-
-    TrackH:
-        id: Track_2H
-
-    TrackH:
-        id: Track_3H
-
-    TrackH:
-        id: Track_4H
-
-    TrackH:
-        id: Track_5H
-
-    TrackH:
-        id: Track_6H
-
-    TrackH:
-        id: Track_7H
-
-    TrackH:
-        id: Track_8H
-
-    TrackH:
-        id: Track_9H
-
-    TrackH:
-        id: Track_10H
-
-    TrackH:
-        id: Track_11H
-
-    TrackH:
-        id: Track_12H
-
-    TrackH:
-        id: Track_13H
-
-    TrackH:
-        id: Track_14H
-
-    TrackH:
-        id: Track_15H
-
-    TrackH:
-        id: Track_16H
-
-    TrackH:
-        id: Track_17H
-
-    TrackH:
-        id: Track_18H
-
-    TrackH:
-        id: Track_19H
-
-    TrackH:
-        id: Track_20H
-
-    TrackH:
-        id: Track_21H
-
-    TrackV:
-        id: Track_2V
-
-    TrackV:
-        id: Track_3V
-
-    TrackV:
-        id: Track_4V
-
-    TrackV:
-        id: Track_5V
-
-    TrackV:
-        id: Track_6V
-
-    TrackV:
-        id: Track_7V
-
-    TrackV:
-        id: Track_8V
-
-    TrackV:
-        id: Track_9V
-
-    TrackV:
-        id: Track_10V
-
-    TrackV:
-        id: Track_11V
-
-    TrackV:
-        id: Track_12V
-
-    TrackV:
-        id: Track_13V
-
-    TrackV:
-        id: Track_14V
-
-    TrackV:
-        id: Track_15V
-
-    TrackV:
-        id: Track_16V
-
-    TrackV:
-        id: Track_17V
-
-    TrackV:
-        id: Track_18V
-
-    TrackV:
-        id: Track_19V
-
-    TrackV:
-        id: Track_20V
-
-    TrackV:
-        id: Track_21V
-
-    TrackV:
-        id: Track_22V
-
-    TrackV:
-        id: Track_23V
-
-    TrackV:
-        id: Track_24V
 
     Label:
         font_size: 32
@@ -372,23 +193,25 @@
         text: "Score: " + str(root.score)
 
     Label:
+        id: status_id
         font_size: 70
         color: [1,1,0,1]
         x: 310
         top: 600
-        text: root.status
+        text: ''
 
     Label:
+        id: status_id2
         font_size: 20
         color: [1,1,0,1]
         x: 310
         top: 550
-        text: root.status2
+        text: ''
 
 
     Label:
-        font_size: 40
-        x: 200
+        font_size: 32
+        x: 60
         top: root.top - 60
         text: "Lives: " + str(root.lives)
 
