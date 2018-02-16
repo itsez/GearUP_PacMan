@@ -9,7 +9,7 @@ from kivy.graphics import Color, Ellipse, Rectangle
 
 
 class Pac(Widget):
-    speed = 2
+    speed = 1
     velocity = Vector(0, 0)
     rotation = 0
     start_angle = NumericProperty(-50)  # -90 = closed mouth
@@ -25,7 +25,7 @@ class Pac(Widget):
     chomp_down = True
 
     def setup(self):
-        self.pos = 40 + (32 * 9), 60 + (32 * 4)
+        self.pos = self.parent.x_marg + (32 * 9), self.parent.y_marg + (32 * 4)
         self.dead = False
         self.rotation = 0
         self.curr_key = ''
@@ -93,7 +93,6 @@ class Pac(Widget):
             self.x = 608
             self.rotate(180)
             self.velocity.x = -self.velocity.x
-        self.chomp()
 
     def rotate(self, val):
         self.rotation = val
@@ -132,7 +131,7 @@ class Blinky(Widget):
     make_move = False
 
     def setup(self):
-        self.pos = 40 + (32 * 9), 60 + (32 * 12)
+        self.pos = self.parent.x_marg + (32 * 9), self.parent.y_marg + (32 * 12)
         self.velocity = Vector(1,0)
 
     def move(self, h_tracks, v_tracks, pac_x, pac_y):
@@ -220,7 +219,7 @@ class Pinky(Widget):
     timer = 400
 
     def setup(self):
-        self.pos = 40 + (32 * 9), 60 + (32 * 10)
+        self.pos = self.parent.x_marg + (32 * 9), self.parent.y_marg + (32 * 10)
         self.velocity = Vector(0,1)
         self.timer = 400
 
@@ -237,15 +236,17 @@ class Pinky(Widget):
 
     def spawning(self):
         self.timer += -1
-        if self.top > 60 + (32 * 12):
+        if self.top > self.parent.y_marg + (32 * 12):
             self.velocity = Vector(0, -1)
-        elif self.y < 60 + (32 * 9):
+        elif self.y < self.parent.y_marg + (32 * 9):
             self.velocity = Vector(0, 1)
         if self.timer < 120:
-            self.velocity = Vector(0,1)
-        if self.y >= 60 + (32 * 12):
+            self.velocity = Vector(0, 1)
+        if self.x == self.parent.x_marg + (32 * 9):
+            self.velocity = Vector(0, 1)
+        if self.y >= self.parent.y_marg + (32 * 12):
             self.velocity = Vector(1, 0)
-            self.timer = 0
+            self.timer = 0;
 
     def choose_move(self, h_tracks, v_tracks, pac_x, pac_y):
         self.check_moves(h_tracks, v_tracks)
@@ -324,7 +325,7 @@ class Clyde(Widget):
     timer = 800
 
     def setup(self):
-        self.pos = 40 + (32 * 10), 60 + (32 * 10)
+        self.pos = self.parent.x_marg + (32 * 10), self.parent.y_marg + (32 * 10)
         self.velocity = Vector(0,-1)
         self.timer = 800
 
@@ -341,16 +342,17 @@ class Clyde(Widget):
 
     def spawning(self):
         self.timer += -1
-        if self.top > 60 + (32 * 12):
+        if self.top > self.parent.y_marg + (32 * 12):
             self.velocity = Vector(0, -1)
-        elif self.y < 60 + (32 * 9):
+        elif self.y < self.parent.y_marg + (32 * 9):
             self.velocity = Vector(0, 1)
         if self.timer < 120:
             self.velocity = Vector(-1, 0)
-        if self.x == 40 + (32 * 9):
+        if self.x == self.parent.x_marg + (32 * 9):
             self.velocity = Vector(0, 1)
-        if self.y >= 60 + (32 * 12):
+        if self.y >= self.parent.y_marg + (32 * 12):
             self.velocity = Vector(1, 0)
+            self.timer = 0
 
     def choose_move(self, h_tracks, v_tracks, pac_x, pac_y):
         self.check_moves(h_tracks, v_tracks)
@@ -428,7 +430,7 @@ class Inky(Widget):
     timer = 600
 
     def setup(self):
-        self.pos = 40 + (32 * 8), 60 + (32 * 10)
+        self.pos = self.parent.x_marg + (32 * 8), self.parent.y_marg + (32 * 10)
         self.velocity = Vector(0,-1)
         self.timer = 600
 
@@ -445,16 +447,17 @@ class Inky(Widget):
 
     def spawning(self):
         self.timer += -1
-        if self.top > 60 + (32 * 12):
+        if self.top > self.parent.y_marg + (32 * 12):
             self.velocity = Vector(0, -1)
-        elif self.y < 60 + (32 * 9):
+        elif self.y < self.parent.y_marg + (32 * 9):
             self.velocity = Vector(0, 1)
         if self.timer < 120:
             self.velocity = Vector(1, 0)
-        if self.x == 40 + (32 * 9):
+        if self.x == self.parent.x_marg + (32 * 9):
             self.velocity = Vector(0, 1)
-        if self.y >= 60 + (32 * 12):
+        if self.y >= self.parent.y_marg + (32 * 12):
             self.velocity = Vector(1, 0)
+            self.timer = 0
 
     def choose_move(self, h_tracks, v_tracks, pac_x, pac_y):
         self.check_moves(h_tracks, v_tracks)
@@ -535,6 +538,12 @@ class PacGame(Widget):
     status = ObjectProperty()
     status2 = ObjectProperty()
     ready_check = True
+    tile = 32  # size of tile
+    map_l = (19 * tile)  # length of map
+    map_h = (20 * tile)  # height of map
+    x_marg = tile  # margin size for sides of window
+    y_marg = tile # margin size for top and bottom
+
 
     def __init__(self, **kwargs):
         super(PacGame, self).__init__(**kwargs)
@@ -544,6 +553,8 @@ class PacGame(Widget):
         self.status.text = "Ready?"
         self.redraw(self.status)
         self.redraw()
+        print(self.y_marg)
+        print(self.x_marg)
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -561,8 +572,10 @@ class PacGame(Widget):
                 self.redraw(self.status)
                 self.death()
             elif not self.pac.dead:
-                self.status.text = ''
-                self.redraw(self.status)
+                self.pac.update_pos(self.h_tracks, self.v_tracks)
+                if not self.status == '':
+                    self.status.text = ''
+                    self.redraw(self.status)
                 self.move_ghosts()
                 if self.pac.collide_point(self.blinky.center_x, self.blinky.center_y) or\
                         self.pac.collide_point(self.pinky.center_x, self.pinky.center_y) or\
@@ -579,7 +592,7 @@ class PacGame(Widget):
                                 Color(0, 0, 0)
                                 Ellipse(pos=(i[0], i[1]), size=(8, 8))
                             self.redraw()
-                    self.pac.update_pos(self.h_tracks, self.v_tracks)
+                            break
                 if not self.dots:
                     self.win()
 
@@ -646,11 +659,6 @@ class PacGame(Widget):
             self.respawn_player(0)
 
     def build_level(self):
-        x_marg = 40  # margin size for sides of window
-        y_marg = 60  # margin size for top and bottom
-        map_l = 608  # length of map
-        map_h = 640  # height of map
-        tile = 32  # size of tile
         # h_positions = (#tiles x, #tiles y, #tiles length)
         h_positions = [(0,0,19), (0,2,5), (6,2,3), (10,2,3), (14,2,5), (0,4,3), (4,4,11), (16,4,3), (0,6,9), (10,6,9),
                        (6,8,7), (-1,10,8), (12,10,8), (6,12,7), (0,14,5), (6,14,3), (10,14,3), (14,14,5), (0,16,19),
@@ -660,71 +668,68 @@ class PacGame(Widget):
                                                           (18,14,6), (8,16,4), (10,16,4)]
 
         for i in h_positions:
-            # self.h_tracks.append(TrackH(Color=(1,1,1,1),pos=(x_marg + (tile * i[0]), y_marg + (tile * i[1]))))
-            track = TrackH(Color=(1,1,1,1),pos=(x_marg + (tile * i[0]), y_marg + (tile * i[1])))
-            track.length = i[2] * tile
+            track = TrackH(Color=(1,1,1,1),pos=(self.x_marg + (self.tile * i[0]), self.y_marg + (self.tile * i[1])))
+            track.length = i[2] * self.tile
             self.h_tracks.append(track)
             self.add_widget(track)
 
         for i in v_positions:
-            track = TrackV(Color=(1, 1, 1, 1), pos=(x_marg + (tile * i[0]), y_marg + (tile * i[1])))
-            track.length = i[2] * tile
+            track = TrackV(Color=(1, 1, 1, 1), pos=(self.x_marg + (self.tile * i[0]), self.y_marg + (self.tile * i[1])))
+            track.length = i[2] * self.tile
             self.v_tracks.append(track)
             self.add_widget(track)
         self.draw_dots()
 
         with self.canvas:
             Color(0, 0, 0)
-            Rectangle(pos=(269, 355), size=(150, 80))
+            Rectangle(pos=(self.x_marg + (self.tile * 7) + 4, self.y_marg + (self.tile * 8) + 80 /2), size=(152, 80))
             Color(1, 1, 1)
-            Rectangle(pos=(325, 435), size=(40, 8))
+            Rectangle(pos=(self.x_marg + (self.tile * 9)- 4, self.y_marg + (self.tile * 12) - 8), size=(40, 8))
 
     def draw_dots(self):
-        tile = 32    # size of tile
-        x_marg = 40
-        y_marg = 60
         for t in self.h_tracks:
             y_dot = t.center_y - 4
-            x_dot = t.x + (tile / 2) - 4
-            if x_dot < x_marg:                                          # makes sure left portal doesn't have dots
-                x_dot += x_marg
-            for i in range(t.width / tile):
+            x_dot = t.x + (self.tile / 2) - 4
+            if x_dot < self.x_marg:                                          # makes sure left portal doesn't have dots
+                x_dot += self.x_marg
+            for i in range(t.width / self.tile):
                 # check to not draw dots around spawn area or portal tracks
-                if t.y == y_marg + (tile * 10):
+                if t.y == self.y_marg + (self.tile * 10):
                     break
-                if x_dot < (tile * 5) + x_marg or x_dot > (tile * 14) + x_marg or\
-                                y_dot < (tile * 8) + y_marg or y_dot > (tile * 14) + y_marg:
+                if x_dot < (self.tile * 5) + self.x_marg or x_dot > (self.tile * 14) + self.x_marg or\
+                                y_dot < (self.tile * 8) + self.y_marg or y_dot > (self.tile * 14) + self.y_marg:
                         with self.canvas:
                             Color(244, 244, 230)
                             Ellipse(pos=(x_dot, y_dot), size=(8, 8))
                             self.dots.append((x_dot, y_dot))
-                            x_dot += tile
+                            x_dot += self.tile
                             if x_dot > 640 or x_dot > t.right:          # keeps the portals from misplacing dots
                                 break
                 else:
-                    x_dot += tile
+                    x_dot += self.tile
 
         for t in self.v_tracks:
-            y_dot = t.y + (tile/2) - 4
+            y_dot = t.y + (self.tile/2) - 4
             x_dot = t.center_x - 4
-            for i in range(t.height / tile):
+            for i in range(t.height / self.tile):
                 # check to not draw dots around spawn
-                if y_dot not in self.dots[1] and y_dot < (tile * 7) + y_marg or y_dot > (tile * 14) + y_marg or\
-                                x_dot < (tile * 5) + x_marg or x_dot > (tile * 14) + x_marg:
+                if (x_dot, y_dot) not in self.dots and y_dot < (self.tile * 7) + self.y_marg or\
+                                y_dot > (self.tile * 14) + self.y_marg or x_dot < (self.tile * 5) + self.x_marg or\
+                                x_dot > (self.tile * 14) + self.x_marg:
                         with self.canvas:
                             Color(244, 244, 230)
                             Ellipse(pos=(x_dot, y_dot), size=(8, 8))
                             self.dots.append((x_dot, y_dot))
-                            y_dot += tile
+                            y_dot += self.tile
                 else:
-                    y_dot += tile
+                    y_dot += self.tile
 
 
 class PacmanApp(App):
     def build(self):
         # ordering for game initialization
         game = PacGame()
-        Window.size = (720, 840)
+        Window.size = (672, 704)
         Window.top = 100
         Clock.schedule_interval(game.update, 20/60)
         return game

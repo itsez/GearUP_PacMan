@@ -180,16 +180,16 @@
         Color:
             rgb: 0,0,1
         Rectangle:
-            pos: 38,58
-            size: 612, 644
+            pos: root.x_marg, root.y_marg
+            size: root.map_l, root.map_h
         Rectangle:
-            pos: 40, 60
-            size: 608, 640
+            pos: root.x_marg - 2, root.y_marg - 2
+            size: root.map_l + 4, root.map_h + 4
 
     Label:
         font_size: 32
         x: 500
-        top: root.top - 60
+        top: root.top + root.y_marg
         text: "Score: " + str(root.score)
 
     Label:
@@ -212,31 +212,31 @@
     Label:
         font_size: 32
         x: 60
-        top: root.top - 60
+        top: root.top + root.y_marg
         text: "Lives: " + str(root.lives)
 
     Pac:
         id: pac_id
-        x: 40 + (32 * 9)
-        y: 60 + (32 * 4)
+        x: root.x_marg + (root.tile * 9)
+        y: root.y_marg + (root.tile * 4)
 
     Blinky:
         id: red_id
-        x: 40 + (32 * 9)
-        y: 60 + (32 * 12)
+        x: root.x_marg + (root.tile * 9)
+        y: root.y_marg + (root.tile * 12)
 
     Pinky:
         id: pink_id
-        x: 40 + (32 * 9)
-        y: 60 + (32 * 10)
+        x: root.x_marg + (root.tile * 9)
+        y: root.y_marg + (root.tile * 10)
 
     Inky:
         id: blue_id
-        x: 40 + (32 * 8)
-        y: 60 + (32 * 10)
+        x: root.x_marg + (root.tile * 8)
+        y: root.y_marg + (root.tile * 10)
 
     Clyde:
         id: orange_id
-        x: 40 + (32 * 10)
-        y: 60 + (32 * 10)
+        x: root.x_marg + (root.tile * 10)
+        y: root.y_marg + (root.tile * 10)
 
