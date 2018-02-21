@@ -627,6 +627,11 @@ class PacGame(Widget):
                     for i in self.super_dots:
                         if self.pac.collide_point(i[0],i[1]):
                             self.powered()
+                            with self.canvas:
+                                Color(0, 0, 0)
+                                Ellipse(pos=(i[0] + 8, i[1] + 8), size=(16, 16))
+                            self.redraw()
+                            break
                     for i in self.dots:
                         if self.pac.collide_point(i[0],i[1]):
                             self.score += 1
@@ -697,7 +702,6 @@ class PacGame(Widget):
         for i in h_positions:
             for j in range(i[2]):
                 self.grid[i[0] + j][i[1]] = "h"
-                print(j)
 
         for i in v_positions:
             for j in range(i[2]):
