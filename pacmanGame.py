@@ -61,29 +61,33 @@ class Pac(Widget):
         gx = int((self.x / self.parent.tile) - (self.parent.x_marg / self.parent.tile))
         gy = int((self.y / self.parent.tile) - (self.parent.y_marg / self.parent.tile))
         if self.y % 32 == 0:  # check to make sure we are centered
-            if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv' and self.x % 32 == 0:
-                if gx > 0 and not grid[gx-1][gy] == 'wall':
+            if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv':
+                if not grid[gx-1][gy] == 'wall':
                     self.m_left = True
-                elif self.velocity.x == -1:
+                elif self.velocity.x == -1 and self.x % 32 == 0:
                     self.velocity.x = 0
 
-                if gx < 19 and not grid[gx+1][gy] == 'wall':
+                if not grid[gx+1][gy] == 'wall':
                     self.m_right = True
                 elif self.velocity.x == 1:
                     self.velocity.x = 0
         if self.x % 32 == 0:
             if grid[gx][gy] == 'v' or grid[gx][gy] == 'hv' and self.y % 32 == 0:
-                if gy > 0 and not grid[gx][gy-1] == 'wall':
+                if not grid[gx][gy-1] == 'wall':
                     self.m_down = True
                 elif self.velocity.y == -1:
                     self.velocity.y = 0
-                if gy < 19 and not grid[gx][gy+1] == 'wall':
+                if not grid[gx][gy+1] == 'wall':
                     self.m_up = True
                 elif self.velocity.y == 1:
                     self.velocity.y = 0
 
     def update_pos(self, grid):
         self.change_direction(grid)
+        if self.x < self.parent.x_marg - 10:
+            self.pos = 604,self.y
+        elif self.x > self.parent.map_l + 10:
+            self.pos = self.parent.x_marg, self.y
         self.pos = (self.velocity * self.speed) + self.pos
 
     def rotate(self, val):
@@ -121,25 +125,58 @@ class Blinky(Widget):
     velocity = Vector(1, 0)
     last_move = "right"
     make_move = False
-    r = NumericProperty(.82)
-    g = NumericProperty(.24)
-    b = NumericProperty(.09)
+    color = ListProperty([.82,.24,.09])
+    state = "normal"
 
     def setup(self):
         self.pos = self.parent.x_marg + (32 * 9), self.parent.y_marg + (32 * 12)
         self.velocity = Vector(1,0)
+        self.state = "normal"
 
     def move(self, grid, pac_x, pac_y):
-        self.choose_move(grid, pac_x, pac_y)
+        self.check_moves(grid)
+        if self.state == "normal":
+            self.choose_move(grid, pac_x, pac_y)
+        elif self.state == "scared":
+            self.scatter(grid, pac_x, pac_y)
         self.pos = self.velocity * self.speed + self.pos
-        if self.x >= 640:
-            self.x = 40
-        if self.x <= 8:
-            self.x = 608
+        if self.x >= self.parent.map_l + self.parent.x_marg + 10:
+            self.x = self.parent.x_marg
+        if self.x <= self.parent.x_marg - 10:
+            self.x = self.parent.map_l
+
+    def scatter(self, grid, pac_x, pac_y):
+        if self.last_move == "up" or self.last_move == "down":
+            if pac_x > self.center_x and self.m_left:
+                self.last_move = "left"
+                self.velocity = Vector(-1, 0)
+            elif pac_x < self.center_x and self.m_right:
+                self.last_move = "right"
+                self.velocity = Vector(1, 0)
+            elif self.velocity == Vector(0,0):
+                if self.m_right:
+                    self.last_move = "right"
+                    self.velocity = Vector(1,0)
+                elif self.m_left:
+                    self.last_move = "left"
+                    self.velocity = Vector(-1,0)
+
+        elif self.last_move == "left" or self.last_move == "right":
+            if pac_y > self.center_y and self.m_down:
+                self.last_move = "down"
+                self.velocity = Vector(0, -1)
+            elif pac_y < self.center_y and self.m_up:
+                self.last_move = "up"
+                self.velocity = Vector(0, 1)
+            elif self.velocity == Vector(0, 0):
+                if self.m_up:
+                    self.last_move = "up"
+                    self.velocity = Vector(0, 1)
+                elif self.m_down:
+                    self.last_move = "down"
+                    self.velocity = Vector(0, -1)
 
     def choose_move(self, grid, pac_x, pac_y):
-        self.check_moves(grid)
-
         if self.last_move == "up" or self.last_move == "down":
             if pac_x < self.center_x and self.m_left:
                 self.last_move = "left"
@@ -179,35 +216,36 @@ class Blinky(Widget):
         gx = int((self.x / self.parent.tile) - (self.parent.x_marg / self.parent.tile))
         gy = int((self.y / self.parent.tile) - (self.parent.y_marg / self.parent.tile))
         if self.y % 32 == 0:  # check to make sure we are centered
-            if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv' and self.x % 32 == 0:
-                if gx > 0 and not grid[gx - 1][gy] == 'wall':
+            if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv':
+                if not grid[gx - 1][gy] == 'wall':
                     self.m_left = True
-                elif self.velocity.x == -1:
+                elif self.velocity.x == -1 and self.x % 32 == 0:
                     self.velocity.x = 0
 
-                if gx < 19 and not grid[gx + 1][gy] == 'wall':
+                if not grid[gx + 1][gy] == 'wall':
                     self.m_right = True
                 elif self.velocity.x == 1:
                     self.velocity.x = 0
         if self.x % 32 == 0:
             if grid[gx][gy] == 'v' or grid[gx][gy] == 'hv' and self.y % 32 == 0:
-                if gy > 0 and not grid[gx][gy - 1] == 'wall':
+                if not grid[gx][gy - 1] == 'wall':
                     self.m_down = True
                 elif self.velocity.y == -1:
                     self.velocity.y = 0
-                if gy < 19 and not grid[gx][gy + 1] == 'wall':
+                if not grid[gx][gy + 1] == 'wall':
                     self.m_up = True
                 elif self.velocity.y == 1:
                     self.velocity.y = 0
 
     def scared(self):
-        self.r = 0
-        self.g = 0
-        self.b = 1
+        self.color = [0,0,1]
+        self.state = "scared"
+        self.velocity = -self.velocity
+
     def reset_color(self):
-        self.r = .82
-        self.g = .24
-        self.b = .09
+        self.state = "normal"
+        self.color = [.82, .24, .09]
+
 
 class Pinky(Widget):
     m_left = False
@@ -218,26 +256,29 @@ class Pinky(Widget):
     velocity = Vector(0, 1)
     last_move = "up"
     make_move = False
-    timer = 400
-    r = NumericProperty(.86)
-    g = NumericProperty(.51)
-    b = NumericProperty(.89)
+    timer = 800
+    color = ListProperty([.86,.51,.89])
+    state = "spawning"
 
     def setup(self):
         self.pos = self.parent.x_marg + (32 * 9), self.parent.y_marg + (32 * 10)
         self.velocity = Vector(0,1)
         self.timer = 400
+        self.state = "spawning"
 
     def move(self, grid, pac_x, pac_y):
-        if self.timer > 0:
+        self.check_moves(grid)
+        if self.state == "spawning":
             self.spawning()
-        else:
+        if self.state == "normal":
             self.choose_move(grid, pac_x, pac_y)
+        elif self.state == "scared":
+            self.scatter(grid, pac_x, pac_y)
         self.pos = (self.velocity * self.speed) + self.pos
-        if self.x >= 640:
-            self.x = 40
-        if self.x <= 8:
-            self.x = 608
+        if self.x >= self.parent.map_l + self.parent.x_marg + 10:
+            self.x = self.parent.x_marg
+        if self.x <= self.parent.x_marg - 10:
+            self.x = self.parent.map_l
 
     def spawning(self):
         self.timer += -1
@@ -252,6 +293,7 @@ class Pinky(Widget):
         if self.y >= self.parent.y_marg + (32 * 12):
             self.velocity = Vector(1, 0)
             self.timer = 0;
+            self.state = "normal"
 
     def choose_move(self, grid, pac_x, pac_y):
         self.check_moves(grid)
@@ -286,6 +328,37 @@ class Pinky(Widget):
                     self.last_move = "down"
                     self.velocity = Vector(0, -1)
 
+    def scatter(self, grid, pac_x, pac_y):
+        if self.last_move == "up" or self.last_move == "down":
+            if pac_x > self.center_x and self.m_left:
+                self.last_move = "left"
+                self.velocity = Vector(-1, 0)
+            elif pac_x < self.center_x and self.m_right:
+                self.last_move = "right"
+                self.velocity = Vector(1, 0)
+            elif self.velocity == Vector(0,0):
+                if self.m_right:
+                    self.last_move = "right"
+                    self.velocity = Vector(1,0)
+                elif self.m_left:
+                    self.last_move = "left"
+                    self.velocity = Vector(-1,0)
+
+        elif self.last_move == "left" or self.last_move == "right":
+            if pac_y > self.center_y and self.m_down:
+                self.last_move = "down"
+                self.velocity = Vector(0, -1)
+            elif pac_y < self.center_y and self.m_up:
+                self.last_move = "up"
+                self.velocity = Vector(0, 1)
+            elif self.velocity == Vector(0, 0):
+                if self.m_up:
+                    self.last_move = "up"
+                    self.velocity = Vector(0, 1)
+                elif self.m_down:
+                    self.last_move = "down"
+                    self.velocity = Vector(0, -1)
+
     def check_moves(self, grid):
         self.m_down = False
         self.m_up = False
@@ -295,36 +368,37 @@ class Pinky(Widget):
         gx = int((self.x / self.parent.tile) - (self.parent.x_marg / self.parent.tile))
         gy = int((self.y / self.parent.tile) - (self.parent.y_marg / self.parent.tile))
         if self.y % 32 == 0:  # check to make sure we are centered
-            if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv' and self.x % 32 == 0:
-                if gx > 0 and not grid[gx - 1][gy] == 'wall':
+            if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv':
+                if not grid[gx - 1][gy] == 'wall':
                     self.m_left = True
-                elif self.velocity.x == -1:
+                elif self.velocity.x == -1 and self.x % 32 == 0:
                     self.velocity.x = 0
 
-                if gx < 19 and not grid[gx + 1][gy] == 'wall':
+                if not grid[gx + 1][gy] == 'wall':
                     self.m_right = True
                 elif self.velocity.x == 1:
                     self.velocity.x = 0
         if self.x % 32 == 0:
             if grid[gx][gy] == 'v' or grid[gx][gy] == 'hv' and self.y % 32 == 0:
-                if gy > 0 and not grid[gx][gy - 1] == 'wall':
+                if not grid[gx][gy - 1] == 'wall':
                     self.m_down = True
                 elif self.velocity.y == -1:
                     self.velocity.y = 0
-                if gy < 19 and not grid[gx][gy + 1] == 'wall':
+                if not grid[gx][gy + 1] == 'wall':
                     self.m_up = True
                 elif self.velocity.y == 1:
                     self.velocity.y = 0
 
     def scared(self):
-        self.r = 0
-        self.g = 0
-        self.b = 1
+        self.color = [0,0,1]
+        if not self.state == "spawning":
+            self.state = "scared"
+            self.velocity = -self.velocity
 
     def reset_color(self):
-        self.r = 86
-        self.g = .51
-        self.b = .89
+        self.color = [.86, .51, .89]
+        self.state = "normal"
+
 
 class Clyde(Widget):
     m_left = False
@@ -335,26 +409,29 @@ class Clyde(Widget):
     velocity = Vector(0, -1)
     last_move = "up"
     make_move = False
-    timer = 800
-    r = NumericProperty(.86)
-    g = NumericProperty(.52)
-    b = NumericProperty(.11)
+    timer = 1200
+    color = ListProperty([.86,.52,.11])
+    state = "spawning"
 
     def setup(self):
         self.pos = self.parent.x_marg + (32 * 10), self.parent.y_marg + (32 * 10)
         self.velocity = Vector(0,-1)
         self.timer = 800
+        self.state = "spawning"
 
     def move(self, grid, pac_x, pac_y):
-        if self.timer > 0:
+        self.check_moves(grid)
+        if self.state == "spawning":
             self.spawning()
-        else:
+        if self.state == "normal":
             self.choose_move(grid, pac_x, pac_y)
+        elif self.state == "scared":
+            self.scatter(grid, pac_x, pac_y)
         self.pos = (self.velocity * self.speed) + self.pos
-        if self.x >= 640:
-            self.x = 40
-        if self.x <= 8:
-            self.x = 608
+        if self.x >= self.parent.map_l + self.parent.x_marg + 10:
+            self.x = self.parent.x_marg
+        if self.x <= self.parent.x_marg - 10:
+            self.x = self.parent.map_l
 
     def spawning(self):
         self.timer += -1
@@ -369,6 +446,38 @@ class Clyde(Widget):
         if self.y >= self.parent.y_marg + (32 * 12):
             self.velocity = Vector(1, 0)
             self.timer = 0
+            self.state = "normal"
+
+    def scatter(self, grid, pac_x, pac_y):
+        if self.last_move == "up" or self.last_move == "down":
+            if pac_x > self.center_x and self.m_left:
+                self.last_move = "left"
+                self.velocity = Vector(-1, 0)
+            elif pac_x < self.center_x and self.m_right:
+                self.last_move = "right"
+                self.velocity = Vector(1, 0)
+            elif self.velocity == Vector(0,0):
+                if self.m_right:
+                    self.last_move = "right"
+                    self.velocity = Vector(1,0)
+                elif self.m_left:
+                    self.last_move = "left"
+                    self.velocity = Vector(-1,0)
+
+        elif self.last_move == "left" or self.last_move == "right":
+            if pac_y > self.center_y and self.m_down:
+                self.last_move = "down"
+                self.velocity = Vector(0, -1)
+            elif pac_y < self.center_y and self.m_up:
+                self.last_move = "up"
+                self.velocity = Vector(0, 1)
+            elif self.velocity == Vector(0, 0):
+                if self.m_up:
+                    self.last_move = "up"
+                    self.velocity = Vector(0, 1)
+                elif self.m_down:
+                    self.last_move = "down"
+                    self.velocity = Vector(0, -1)
 
     def choose_move(self, grid, pac_x, pac_y):
         self.check_moves(grid)
@@ -411,36 +520,36 @@ class Clyde(Widget):
         gx = int((self.x / self.parent.tile) - (self.parent.x_marg / self.parent.tile))
         gy = int((self.y / self.parent.tile) - (self.parent.y_marg / self.parent.tile))
         if self.y % 32 == 0:  # check to make sure we are centered
-            if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv' and self.x % 32 == 0:
-                if gx > 0 and not grid[gx - 1][gy] == 'wall':
+            if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv':
+                if not grid[gx - 1][gy] == 'wall':
                     self.m_left = True
-                elif self.velocity.x == -1:
+                elif self.velocity.x == -1 and self.x % 32 == 0:
                     self.velocity.x = 0
 
-                if gx < 19 and not grid[gx + 1][gy] == 'wall':
+                if not grid[gx + 1][gy] == 'wall':
                     self.m_right = True
                 elif self.velocity.x == 1:
                     self.velocity.x = 0
         if self.x % 32 == 0:
             if grid[gx][gy] == 'v' or grid[gx][gy] == 'hv' and self.y % 32 == 0:
-                if gy > 0 and not grid[gx][gy - 1] == 'wall':
+                if not grid[gx][gy - 1] == 'wall':
                     self.m_down = True
                 elif self.velocity.y == -1:
                     self.velocity.y = 0
-                if gy < 19 and not grid[gx][gy + 1] == 'wall':
+                if not grid[gx][gy + 1] == 'wall':
                     self.m_up = True
                 elif self.velocity.y == 1:
                     self.velocity.y = 0
 
     def scared(self):
-        self.r = 0
-        self.g = 0
-        self.b = 1
+        self.color = [0, 0, 1]
+        if not self.state == "spawnin":
+            self.state = "scared"
+            self.velocity = -self.velocity
 
     def reset_color(self):
-        self.r = .86
-        self.g = .52
-        self.b = .11
+        self.color = [.86, .51, .11]
+        self.state = "normal"
 
 
 class Inky(Widget):
@@ -452,26 +561,29 @@ class Inky(Widget):
     velocity = Vector(0, -1)
     last_move = "up"
     make_move = False
-    timer = 600
-    r = NumericProperty(.27)
-    g = NumericProperty(.74)
-    b = NumericProperty(.93)
+    timer = 1000
+    color = ListProperty([.27,.74,.93])
+    state = "spawning"
 
     def setup(self):
         self.pos = self.parent.x_marg + (32 * 8), self.parent.y_marg + (32 * 10)
         self.velocity = Vector(0,-1)
         self.timer = 600
+        self.state = "spawning"
 
     def move(self, grid, pac_x, pac_y):
-        if self.timer > 0:
+        self.check_moves(grid)
+        if self.state == "spawning":
             self.spawning()
-        else:
+        if self.state == "normal":
             self.choose_move(grid, pac_x, pac_y)
+        elif self.state == "scared":
+            self.scatter(grid, pac_x, pac_y)
         self.pos = (self.velocity * self.speed) + self.pos
-        if self.x >= 640:
-            self.x = 40
-        if self.x <= 8:
-            self.x = 608
+        if self.x >= self.parent.map_l + self.parent.x_marg + 10:
+            self.x = self.parent.x_marg
+        if self.x <= self.parent.x_marg - 10:
+            self.x = self.parent.map_l
 
     def spawning(self):
         self.timer += -1
@@ -486,6 +598,7 @@ class Inky(Widget):
         if self.y >= self.parent.y_marg + (32 * 12):
             self.velocity = Vector(1, 0)
             self.timer = 0
+            self.state = "normal"
 
     def choose_move(self, grid, pac_x, pac_y):
         self.check_moves(grid)
@@ -520,6 +633,37 @@ class Inky(Widget):
                     self.last_move = "down"
                     self.velocity = Vector(0, -1)
 
+    def scatter(self, grid, pac_x, pac_y):
+        if self.last_move == "up" or self.last_move == "down":
+            if pac_x > self.center_x and self.m_left:
+                self.last_move = "left"
+                self.velocity = Vector(-1, 0)
+            elif pac_x < self.center_x and self.m_right:
+                self.last_move = "right"
+                self.velocity = Vector(1, 0)
+            elif self.velocity == Vector(0,0):
+                if self.m_right:
+                    self.last_move = "right"
+                    self.velocity = Vector(1,0)
+                elif self.m_left:
+                    self.last_move = "left"
+                    self.velocity = Vector(-1,0)
+
+        elif self.last_move == "left" or self.last_move == "right":
+            if pac_y > self.center_y and self.m_down:
+                self.last_move = "down"
+                self.velocity = Vector(0, -1)
+            elif pac_y < self.center_y and self.m_up:
+                self.last_move = "up"
+                self.velocity = Vector(0, 1)
+            elif self.velocity == Vector(0, 0):
+                if self.m_up:
+                    self.last_move = "up"
+                    self.velocity = Vector(0, 1)
+                elif self.m_down:
+                    self.last_move = "down"
+                    self.velocity = Vector(0, -1)
+
     def check_moves(self, grid):
         self.m_down = False
         self.m_up = False
@@ -529,36 +673,37 @@ class Inky(Widget):
         gx = int((self.x / self.parent.tile) - (self.parent.x_marg / self.parent.tile))
         gy = int((self.y / self.parent.tile) - (self.parent.y_marg / self.parent.tile))
         if self.y % 32 == 0:  # check to make sure we are centered
-            if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv' and self.x % 32 == 0:
-                if gx > 0 and not grid[gx - 1][gy] == 'wall':
+            if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv':
+                if not grid[gx - 1][gy] == 'wall':
                     self.m_left = True
-                elif self.velocity.x == -1:
+                elif self.velocity.x == -1 and self.x % 32 == 0:
                     self.velocity.x = 0
 
-                if gx < 19 and not grid[gx + 1][gy] == 'wall':
+                if not grid[gx + 1][gy] == 'wall':
                     self.m_right = True
                 elif self.velocity.x == 1:
                     self.velocity.x = 0
         if self.x % 32 == 0:
             if grid[gx][gy] == 'v' or grid[gx][gy] == 'hv' and self.y % 32 == 0:
-                if gy > 0 and not grid[gx][gy - 1] == 'wall':
+                if not grid[gx][gy - 1] == 'wall':
                     self.m_down = True
                 elif self.velocity.y == -1:
                     self.velocity.y = 0
-                if gy < 19 and not grid[gx][gy + 1] == 'wall':
+                if not grid[gx][gy + 1] == 'wall':
                     self.m_up = True
                 elif self.velocity.y == 1:
                     self.velocity.y = 0
 
     def scared(self):
-        self.r = 0
-        self.g = 0
-        self.b = 1
+        self.color = [0, 0, 1]
+        if not self.state == "spawning":
+            self.state = "scared"
+            self.velocity = -self.velocity
 
     def reset_color(self):
-        self.r = .27
-        self.g = .74
-        self.b = .93
+        self.color = [.27, .74, .93]
+        self.state = "normal"
+
 
 class PacGame(Widget):
     pac = ObjectProperty(None)
@@ -579,7 +724,7 @@ class PacGame(Widget):
     map_h = (20 * tile)  # height of map
     x_marg = tile  # margin size for sides of window
     y_marg = tile # margin size for top and bottom
-    grid = [["wall" for i in range(20)]for j in range(21)]
+    grid = [["wall" for i in range(21)]for j in range(22)]
     super_dots = [(tile,64), (tile * 19, tile * 2), (tile, tile * 19), (tile * 19, tile * 19)]
     powerup = False
 
@@ -619,7 +764,14 @@ class PacGame(Widget):
                         self.pac.collide_point(self.clyde.center_x, self.clyde.center_y) or\
                         self.pac.collide_point(self.inky.center_x, self.inky.center_y):
                     if self.powerup:
-                        pass
+                        if self.pac.collide_point(self.blinky.center_x, self.blinky.center_y):
+                            self.blinky.setup()
+                        if self.pac.collide_point(self.pinky.center_x, self.pinky.center_y):
+                            self.pinky.setup()
+                        if self.pac.collide_point(self.clyde.center_x, self.clyde.center_y):
+                            self.clyde.setup()
+                        if self.pac.collide_point(self.inky.center_x, self.inky.center_y):
+                            self.inky.setup()
                     else:
                         self.pac.dead = True
                         self.lives += -1
@@ -630,6 +782,7 @@ class PacGame(Widget):
                             with self.canvas:
                                 Color(0, 0, 0)
                                 Ellipse(pos=(i[0] + 8, i[1] + 8), size=(16, 16))
+                            self.super_dots.remove(i)
                             self.redraw()
                             break
                     for i in self.dots:
@@ -689,15 +842,11 @@ class PacGame(Widget):
     def draw_grid(self):
         n_grid = (self.map_h / self.tile) * (self.map_l / self.tile)
         h_positions = [(0, 0, 19), (0, 2, 5), (6, 2, 3), (10, 2, 3), (14, 2, 5), (0, 4, 3), (4, 4, 11), (16, 4, 3),
-                       (0, 6, 9), (10, 6, 9),
-                       (6, 8, 7), (0, 10, 8), (12, 10, 8), (6, 12, 7), (0, 14, 5), (6, 14, 3), (10, 14, 3),
-                       (14, 14, 5), (0, 16, 19),
-                       (0, 19, 9), (10, 19, 9)]
+                       (0, 6, 9), (10, 6, 9), (6, 8, 7), (-1, 10, 8), (12, 10, 8), (6, 12, 7), (0, 14, 5), (6, 14, 3),
+                       (10, 14, 3), (14, 14, 5), (0, 16, 19), (0, 19, 9), (10, 19, 9)]
         v_positions = [(0, 0, 3), (8, 0, 3), (10, 0, 3), (18, 0, 3), (2, 2, 3), (4, 2, 18), (6, 2, 3), (12, 2, 3),
-                       (14, 2, 18), (16, 2, 3), (0, 4, 3),
-                       (8, 4, 3), (10, 4, 3), (18, 4, 3), (6, 6, 7), (12, 6, 7), (8, 12, 3), (10, 12, 3), (0, 14, 6),
-                       (6, 14, 3), (12, 14, 3),
-                       (18, 14, 6), (8, 16, 4), (10, 16, 4)]
+                       (14, 2, 18), (16, 2, 3), (0, 4, 3), (8, 4, 3), (10, 4, 3), (18, 4, 3), (6, 6, 7), (12, 6, 7),
+                       (8, 12, 3), (10, 12, 3), (0, 14, 6), (6, 14, 3), (12, 14, 3), (18, 14, 6), (8, 16, 4), (10, 16, 4)]
 
         for i in h_positions:
             for j in range(i[2]):
@@ -709,6 +858,7 @@ class PacGame(Widget):
                     self.grid[i[0]][i[1]+j] = "hv"
                 else:
                     self.grid[i[0]][i[1]+j] = "v"
+        print(self.grid[0][10])
 
     def move_ghosts(self):
         self.blinky.move(self.grid, self.pac.center_x, self.pac.center_y)
@@ -828,6 +978,7 @@ class PacmanApp(App):
         Window.top = 100
         Clock.schedule_interval(game.update, 20/60)
         return game
+
 
 if __name__ == '__main__':
     PacmanApp().run()
