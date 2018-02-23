@@ -1,7 +1,6 @@
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.properties import NumericProperty, ReferenceListProperty,\
-    ObjectProperty, ListProperty, StringProperty
+from kivy.properties import NumericProperty, ObjectProperty, ListProperty
 from kivy.core.window import Window
 from kivy.vector import Vector
 from kivy.clock import Clock
@@ -10,7 +9,7 @@ from kivy.config import Config
 
 
 class Pac(Widget):
-    speed = 1
+    speed = 2
     velocity = Vector(0, 0)
     rotation = 0
     start_angle = NumericProperty(-50)  # -90 = closed mouth
@@ -117,30 +116,82 @@ class Blinky(Widget):
     m_right = False
     m_up = False
     m_down = False
-    speed = NumericProperty(1)
+    speed = 1
     velocity = Vector(1, 0)
     last_move = "right"
-    color = ListProperty([.82,.24,.09])
-    state = "normal"
+    color = ListProperty([.82, .24, .09])
+    scatter_timer = 100
+    chase_timer = 0
+    state = "scatter"
+    step = 0
 
-    def setup(self):
+    def setup(self, ate=0):
         self.pos = self.parent.x_marg + (32 * 9), self.parent.y_marg + (32 * 12)
-        self.velocity = Vector(1,0)
+        self.velocity = Vector(1, 0)
+        self.scatter_timer = 100
+        self.speed = 1
+        self.last_move = "right"
+        if not ate:
+            self.step = 0
+            self.state = "scatter"
+            self.scatter_timer = 300
+        self.color = [.82, .24, .09]
         self.state = "normal"
 
     def move(self, grid, pac_x, pac_y):
         self.check_moves(grid)
         if self.state == "normal":
-            self.choose_move(pac_x, pac_y)
+            self.chase(pac_x, pac_y)
         elif self.state == "scared":
-            self.scatter(pac_x, pac_y)
+            self.run(pac_x, pac_y)
+        elif self.state == "scatter":
+            self.scatter()
         self.pos = self.velocity * self.speed + self.pos
         if self.x >= self.parent.map_l + 10:
             self.x = self.parent.x_marg
         if self.x <= self.parent.x_marg - 10:
             self.x = self.parent.map_l
 
-    def scatter(self, pac_x, pac_y):
+    def scatter(self):
+        target_x = self.parent.map_l + self.parent.x_marg
+        target_y = self.parent.map_h + self.parent.y_marg
+        self.scatter_timer += -1
+        if not self.scatter_timer:
+            self.velocity = -self.velocity
+            self.state = "normal"
+            self.chase_timer = 500
+
+        if self.last_move == "up" or self.last_move == "down":
+            if target_x < self.center_x and self.m_left:
+                self.last_move = "left"
+                self.velocity = Vector(-1, 0)
+            elif target_x > self.center_x and self.m_right:
+                self.last_move = "right"
+                self.velocity = Vector(1, 0)
+            elif self.velocity == Vector(0, 0):
+                if self.m_right:
+                    self.last_move = "right"
+                    self.velocity = Vector(1, 0)
+                elif self.m_left:
+                    self.last_move = "left"
+                    self.velocity = Vector(-1, 0)
+
+        elif self.last_move == "left" or self.last_move == "right":
+            if target_y < self.center_y and self.m_down:
+                self.last_move = "down"
+                self.velocity = Vector(0, -1)
+            elif target_y > self.center_y and self.m_up:
+                self.last_move = "up"
+                self.velocity = Vector(0, 1)
+            elif self.velocity == Vector(0, 0):
+                if self.m_up:
+                    self.last_move = "up"
+                    self.velocity = Vector(0, 1)
+                elif self.m_down:
+                    self.last_move = "down"
+                    self.velocity = Vector(0, -1)
+
+    def run(self, pac_x, pac_y):
         if self.last_move == "up" or self.last_move == "down":
             if pac_x > self.center_x and self.m_left:
                 self.last_move = "left"
@@ -171,7 +222,15 @@ class Blinky(Widget):
                     self.last_move = "down"
                     self.velocity = Vector(0, -1)
 
-    def choose_move(self, pac_x, pac_y):
+    def chase(self, pac_x, pac_y):
+        if not self.step == 3:
+            self.chase_timer += -1
+            print(self.step)
+            if not self.chase_timer:
+                self.step += 1
+                self.state = "scatter"
+                self.scatter_timer = 100
+                self.velocity = -self.velocity
         if self.last_move == "up" or self.last_move == "down":
             if pac_x < self.center_x and self.m_left:
                 self.last_move = "left"
@@ -179,13 +238,13 @@ class Blinky(Widget):
             elif pac_x > self.center_x and self.m_right:
                 self.last_move = "right"
                 self.velocity = Vector(1, 0)
-            elif self.velocity == Vector(0,0):
+            elif self.velocity == Vector(0, 0):
                 if self.m_right:
                     self.last_move = "right"
-                    self.velocity = Vector(1,0)
+                    self.velocity = Vector(1, 0)
                 elif self.m_left:
                     self.last_move = "left"
-                    self.velocity = Vector(-1,0)
+                    self.velocity = Vector(-1, 0)
 
         elif self.last_move == "left" or self.last_move == "right":
             if pac_y < self.center_y and self.m_down:
@@ -240,6 +299,11 @@ class Blinky(Widget):
     def reset_color(self):
         self.state = "normal"
         self.color = [.82, .24, .09]
+        self.velocity = -self.velocity
+        if not self.scatter_timer:
+            self.state = "normal"
+        else:
+            self.state = "scatter"
 
 
 class Pinky(Widget):
@@ -249,27 +313,34 @@ class Pinky(Widget):
     m_down = False
     speed = NumericProperty(1)
     velocity = Vector(0, 1)
-    last_move = "up"
+    last_move = "right"
     timer = 600
-    color = ListProperty([.86,.51,.89])
+    chase_timer = 0
+    color = ListProperty([.86, .51, .89])
     state = "spawning"
+    step = 0
 
     def setup(self, ate=0):
         self.pos = self.parent.x_marg + (32 * 9), self.parent.y_marg + (32 * 10)
         self.velocity = Vector(0,1)
-        self.last_move = "up"
+        self.last_move = "right"
         if not ate:
             self.timer = 600
+            self.step = 0
+            self.state = "spawning"
+        self.color = [.86, .51, .89]
         self.state = "spawning"
 
-    def move(self, grid, pac_x, pac_y):
+    def move(self, grid, pac_x, pac_y, pac_velocity):
         self.check_moves(grid)
         if self.state == "spawning":
             self.spawning()
         if self.state == "normal":
-            self.choose_move(pac_x, pac_y)
+            self.chase(pac_x, pac_y, pac_velocity)
         elif self.state == "scared":
-            self.scatter(pac_x, pac_y)
+            self.run(pac_x, pac_y)
+        elif self.state == "scatter":
+            self.scatter()
         self.pos = (self.velocity * self.speed) + self.pos
         if self.x >= self.parent.map_l + 10:
             self.x = self.parent.x_marg
@@ -286,15 +357,23 @@ class Pinky(Widget):
             self.velocity = Vector(0, 1)
         if self.y >= self.parent.y_marg + (32 * 12):
             self.velocity = Vector(1, 0)
-            self.timer = 0
+            self.timer = 300
+            self.state = "scatter"
+
+    def scatter(self):
+        target_x = self.parent.x_marg
+        target_y = self.parent.map_h + self.parent.tile * 2
+        self.timer += -1
+        if not self.timer:
+            self.velocity = -self.velocity
+            self.chase_timer = 800
             self.state = "normal"
 
-    def choose_move(self, pac_x, pac_y):
         if self.last_move == "up" or self.last_move == "down":
-            if pac_x < self.center_x and self.m_left:
+            if target_x < self.center_x and self.m_left:
                 self.last_move = "left"
                 self.velocity = Vector(-1, 0)
-            elif pac_x > self.center_x and self.m_right:
+            elif target_x > self.center_x and self.m_right:
                 self.last_move = "right"
                 self.velocity = Vector(1, 0)
             elif self.velocity == Vector(0,0):
@@ -306,10 +385,10 @@ class Pinky(Widget):
                     self.velocity = Vector(-1,0)
 
         elif self.last_move == "left" or self.last_move == "right":
-            if pac_y < self.center_y and self.m_down:
+            if target_y < self.center_y and self.m_down:
                 self.last_move = "down"
                 self.velocity = Vector(0, -1)
-            elif pac_y > self.center_y and self.m_up:
+            elif target_y > self.center_y and self.m_up:
                 self.last_move = "up"
                 self.velocity = Vector(0, 1)
             elif self.velocity == Vector(0, 0):
@@ -320,7 +399,47 @@ class Pinky(Widget):
                     self.last_move = "down"
                     self.velocity = Vector(0, -1)
 
-    def scatter(self, pac_x, pac_y):
+    def chase(self, pac_x, pac_y, pac_velocity):
+        if not self.step == 3:
+            self.chase_timer += -1
+            if not self.chase_timer:
+                self.velocity = -self.velocity
+                self.step += 1
+                self.state = "scatter"
+                self.timer = 300
+        predict_x = pac_x + (self.parent.tile * pac_velocity.x * 4)
+        predict_y = pac_y + (self.parent.tile * pac_velocity.y * 4)
+        if self.last_move == "up" or self.last_move == "down":
+            if predict_x < self.center_x and self.m_left:
+                self.last_move = "left"
+                self.velocity = Vector(-1, 0)
+            elif predict_x > self.center_x and self.m_right:
+                self.last_move = "right"
+                self.velocity = Vector(1, 0)
+            elif self.velocity == Vector(0, 0):
+                if self.m_right:
+                    self.last_move = "right"
+                    self.velocity = Vector(1, 0)
+                elif self.m_left:
+                    self.last_move = "left"
+                    self.velocity = Vector(-1, 0)
+
+        elif self.last_move == "left" or self.last_move == "right":
+            if predict_y < self.center_y and self.m_down:
+                self.last_move = "down"
+                self.velocity = Vector(0, -1)
+            elif predict_y > self.center_y and self.m_up:
+                self.last_move = "up"
+                self.velocity = Vector(0, 1)
+            elif self.velocity == Vector(0, 0):
+                if self.m_up:
+                    self.last_move = "up"
+                    self.velocity = Vector(0, 1)
+                elif self.m_down:
+                    self.last_move = "down"
+                    self.velocity = Vector(0, -1)
+
+    def run(self, pac_x, pac_y):
         if self.last_move == "up" or self.last_move == "down":
             if pac_x > self.center_x and self.m_left:
                 self.last_move = "left"
@@ -389,7 +508,11 @@ class Pinky(Widget):
 
     def reset_color(self):
         self.color = [.86, .51, .89]
-        self.state = "normal"
+        self.velocity = -self.velocity
+        if not self.timer:
+            self.state = "normal"
+        else:
+            self.state = "scatter"
 
 
 class Clyde(Widget):
@@ -399,27 +522,37 @@ class Clyde(Widget):
     m_down = False
     speed = NumericProperty(1)
     velocity = Vector(0, -1)
-    last_move = "up"
-    timer = 800
+    last_move = "horizontal"
+    timer = 1400
     color = ListProperty([.86,.52,.11])
     state = "spawning"
+    step = 0
 
     def setup(self, ate=0):
         self.pos = self.parent.x_marg + (32 * 10), self.parent.y_marg + (32 * 10)
         self.velocity = Vector(0,-1)
-        self.last_move = "up"
+        self.last_move = "horizontal"
         if not ate:
-            self.timer = 800
+            self.step = 0
+            self.timer = 1400
+        self.color = [.86, .51, .11]
         self.state = "spawning"
 
     def move(self, grid, pac_x, pac_y):
         self.check_moves(grid)
-        if self.state == "spawning":
+        if self.state == "scared":
+            self.run(pac_x, pac_y)
+        elif self.state == "spawning":
             self.spawning()
-        if self.state == "normal":
-            self.choose_move(grid, pac_x, pac_y)
-        elif self.state == "scared":
-            self.scatter(grid, pac_x, pac_y)
+        elif abs(self.center_x - pac_x) + abs(self.center_y - pac_y) <= 8 * self.parent.tile:
+            if not self.state == "scatter":
+                self.velocity = -self.velocity
+            self.state = "scatter"
+            self.scatter()
+        else:
+            self.state = "normal"
+            self.chase(pac_x, pac_y)
+
         self.pos = (self.velocity * self.speed) + self.pos
         if self.x >= self.parent.map_l + 10:
             self.x = self.parent.x_marg
@@ -438,70 +571,101 @@ class Clyde(Widget):
             self.velocity = Vector(0, 1)
         if self.y >= self.parent.y_marg + (32 * 12):
             self.velocity = Vector(1, 0)
-            self.timer = 0
-            self.state = "normal"
+            self.timer = 300
+            self.state = "scatter"
 
-    def scatter(self, grid, pac_x, pac_y):
-        if self.last_move == "up" or self.last_move == "down":
-            if pac_x > self.center_x and self.m_left:
-                self.last_move = "left"
+    def scatter(self):
+        target_x = self.parent.x_marg + self.parent.tile * 2
+        target_y = 0
+        if self.last_move == "vertical":
+            if target_x < self.center_x and self.m_left:
                 self.velocity = Vector(-1, 0)
-            elif pac_x < self.center_x and self.m_right:
-                self.last_move = "right"
-                self.velocity = Vector(1, 0)
-            elif self.velocity == Vector(0,0):
-                if self.m_right:
-                    self.last_move = "right"
-                    self.velocity = Vector(1,0)
-                elif self.m_left:
-                    self.last_move = "left"
-                    self.velocity = Vector(-1,0)
-
-        elif self.last_move == "left" or self.last_move == "right":
-            if pac_y > self.center_y and self.m_down:
-                self.last_move = "down"
-                self.velocity = Vector(0, -1)
-            elif pac_y < self.center_y and self.m_up:
-                self.last_move = "up"
-                self.velocity = Vector(0, 1)
-            elif self.velocity == Vector(0, 0):
-                if self.m_up:
-                    self.last_move = "up"
-                    self.velocity = Vector(0, 1)
-                elif self.m_down:
-                    self.last_move = "down"
-                    self.velocity = Vector(0, -1)
-
-    def choose_move(self, grid, pac_x, pac_y):
-        self.check_moves(grid)
-        if self.last_move == "up" or self.last_move == "down":
-            if pac_x < self.center_x and self.m_left:
-                self.last_move = "left"
-                self.velocity = Vector(-1, 0)
-            elif pac_x > self.center_x and self.m_right:
-                self.last_move = "right"
+            elif target_x > self.center_x and self.m_right:
+                self.last_move = "horizontal"
                 self.velocity = Vector(1, 0)
             elif self.velocity == Vector(0, 0):
                 if self.m_right:
-                    self.last_move = "right"
+                    self.last_move = "horizontal"
                     self.velocity = Vector(1, 0)
                 elif self.m_left:
-                    self.last_move = "left"
+                    self.last_move = "horizontal"
                     self.velocity = Vector(-1, 0)
 
-        elif self.last_move == "left" or self.last_move == "right":
-            if pac_y < self.center_y and self.m_down:
-                self.last_move = "down"
+        elif self.last_move == "horizontal":
+            if target_y < self.center_y and self.m_down:
+                self.last_move = "vertical"
                 self.velocity = Vector(0, -1)
-            elif pac_y > self.center_y and self.m_up:
-                self.last_move = "up"
+            elif target_y > self.center_y and self.m_up:
+                self.last_move = "vertical"
                 self.velocity = Vector(0, 1)
             elif self.velocity == Vector(0, 0):
                 if self.m_up:
-                    self.last_move = "up"
+                    self.last_move = "vertical"
                     self.velocity = Vector(0, 1)
                 elif self.m_down:
-                    self.last_move = "down"
+                    self.last_move = "vertical"
+                    self.velocity = Vector(0, -1)
+
+    def run(self, pac_x, pac_y):
+        if self.last_move == "vertical":
+            if pac_x > self.center_x and self.m_left:
+                self.last_move = "horizontal"
+                self.velocity = Vector(-1, 0)
+            elif pac_x < self.center_x and self.m_right:
+                self.last_move = "horizontal"
+                self.velocity = Vector(1, 0)
+            elif self.velocity == Vector(0, 0):
+                if self.m_right:
+                    self.last_move = "horizontal"
+                    self.velocity = Vector(1, 0)
+                elif self.m_left:
+                    self.last_move = "horizontal"
+                    self.velocity = Vector(-1, 0)
+
+        elif self.last_move == "horizontal":
+            if pac_y > self.center_y and self.m_down:
+                self.last_move = "vertical"
+                self.velocity = Vector(0, -1)
+            elif pac_y < self.center_y and self.m_up:
+                self.last_move = "vertical"
+                self.velocity = Vector(0, 1)
+            elif self.velocity == Vector(0, 0):
+                if self.m_up:
+                    self.last_move = "vertical"
+                    self.velocity = Vector(0, 1)
+                elif self.m_down:
+                    self.last_move = "vertical"
+                    self.velocity = Vector(0, -1)
+
+    def chase(self, pac_x, pac_y):
+        if self.last_move == "vertical":
+            if pac_x < self.center_x and self.m_left:
+                self.last_move = "horizontal"
+                self.velocity = Vector(-1, 0)
+            elif pac_x > self.center_x and self.m_right:
+                self.last_move = "horizontal"
+                self.velocity = Vector(1, 0)
+            elif self.velocity == Vector(0, 0):
+                if self.m_right:
+                    self.last_move = "horizontal"
+                    self.velocity = Vector(1, 0)
+                elif self.m_left:
+                    self.last_move = "horizontal"
+                    self.velocity = Vector(-1, 0)
+
+        elif self.last_move == "horizontal":
+            if pac_y < self.center_y and self.m_down:
+                self.last_move = "vertical"
+                self.velocity = Vector(0, -1)
+            elif pac_y > self.center_y and self.m_up:
+                self.last_move = "vertical"
+                self.velocity = Vector(0, 1)
+            elif self.velocity == Vector(0, 0):
+                if self.m_up:
+                    self.last_move = "vertical"
+                    self.velocity = Vector(0, 1)
+                elif self.m_down:
+                    self.last_move = "vertical"
                     self.velocity = Vector(0, -1)
 
     def check_moves(self, grid):
@@ -541,6 +705,7 @@ class Clyde(Widget):
             self.color = [0, 0, 1]
 
     def reset_color(self):
+        self.velocity = -self.velocity
         self.color = [.86, .51, .11]
         self.state = "normal"
 
@@ -552,27 +717,34 @@ class Inky(Widget):
     m_down = False
     speed = NumericProperty(1)
     velocity = Vector(0, -1)
-    last_move = "up"
+    last_move = "right"
     timer = 1000
+    chase_timer = 0
     color = ListProperty([.27,.74,.93])
     state = "spawning"
+    step = 0
 
     def setup(self, ate=0):
         self.pos = self.parent.x_marg + (32 * 8), self.parent.y_marg + (32 * 10)
         self.velocity = Vector(0,-1)
-        self.last_move = "up"
+        self.last_move = "right"
         if not ate:
             self.timer = 1000
+            self.state = "spawning"
+            self.step = 0
         self.state = "spawning"
+        self.color = [.27, .74, .93]
 
     def move(self, grid, pac_x, pac_y):
         self.check_moves(grid)
         if self.state == "spawning":
             self.spawning()
         if self.state == "normal":
-            self.choose_move(pac_x, pac_y)
+            self.chase(pac_x, pac_y)
         elif self.state == "scared":
-            self.scatter(pac_x, pac_y)
+            self.run(pac_x, pac_y)
+        elif self.state == "scatter":
+            self.scatter()
         self.pos = (self.velocity * self.speed) + self.pos
         if self.x >= self.parent.map_l + 10:
             self.x = self.parent.x_marg
@@ -591,15 +763,23 @@ class Inky(Widget):
             self.velocity = Vector(0, 1)
         if self.y >= self.parent.y_marg + (32 * 12):
             self.velocity = Vector(1, 0)
-            self.timer = 0
+            self.timer = 300
+            self.state = "scatter"
+
+    def scatter(self):
+        target_x = self.parent.map_l + self.parent.tile * 2
+        target_y = 0
+        self.timer += -1
+        if not self.timer:
+            self.velocity = -self.velocity
+            self.chase_timer = 800
             self.state = "normal"
 
-    def choose_move(self, pac_x, pac_y):
         if self.last_move == "up" or self.last_move == "down":
-            if pac_x < self.center_x and self.m_left:
+            if target_x < self.center_x and self.m_left:
                 self.last_move = "left"
                 self.velocity = Vector(-1, 0)
-            elif pac_x > self.center_x and self.m_right:
+            elif target_x > self.center_x and self.m_right:
                 self.last_move = "right"
                 self.velocity = Vector(1, 0)
             elif self.velocity == Vector(0, 0):
@@ -611,10 +791,10 @@ class Inky(Widget):
                     self.velocity = Vector(-1, 0)
 
         elif self.last_move == "left" or self.last_move == "right":
-            if pac_y < self.center_y and self.m_down:
+            if target_y < self.center_y and self.m_down:
                 self.last_move = "down"
                 self.velocity = Vector(0, -1)
-            elif pac_y > self.center_y and self.m_up:
+            elif target_y > self.center_y and self.m_up:
                 self.last_move = "up"
                 self.velocity = Vector(0, 1)
             elif self.velocity == Vector(0, 0):
@@ -625,7 +805,47 @@ class Inky(Widget):
                     self.last_move = "down"
                     self.velocity = Vector(0, -1)
 
-    def scatter(self, pac_x, pac_y):
+    def chase(self, pac_x, pac_y):
+        if not self.step == 3:
+            self.chase_timer += -1
+            if not self.chase_timer:
+                self.velocity = -self.velocity
+                self.step += 1
+                self.state = "scatter"
+                self.timer = 300
+        x_target = pac_x + abs(self.parent.blinky.center_x - pac_x) * 2
+        y_target = pac_y + abs(self.parent.blinky.center_y - pac_y) * 2
+        if self.last_move == "up" or self.last_move == "down":
+            if x_target < self.center_x and self.m_left:
+                self.last_move = "left"
+                self.velocity = Vector(-1, 0)
+            elif x_target> self.center_x and self.m_right:
+                self.last_move = "right"
+                self.velocity = Vector(1, 0)
+            elif self.velocity == Vector(0, 0):
+                if self.m_right:
+                    self.last_move = "right"
+                    self.velocity = Vector(1, 0)
+                elif self.m_left:
+                    self.last_move = "left"
+                    self.velocity = Vector(-1, 0)
+
+        elif self.last_move == "left" or self.last_move == "right":
+            if y_target < self.center_y and self.m_down:
+                self.last_move = "down"
+                self.velocity = Vector(0, -1)
+            elif y_target > self.center_y and self.m_up:
+                self.last_move = "up"
+                self.velocity = Vector(0, 1)
+            elif self.velocity == Vector(0, 0):
+                if self.m_up:
+                    self.last_move = "up"
+                    self.velocity = Vector(0, 1)
+                elif self.m_down:
+                    self.last_move = "down"
+                    self.velocity = Vector(0, -1)
+
+    def run(self, pac_x, pac_y):
         if self.last_move == "up" or self.last_move == "down":
             if pac_x > self.center_x and self.m_left:
                 self.last_move = "left"
@@ -694,7 +914,11 @@ class Inky(Widget):
 
     def reset_color(self):
         self.color = [.27, .74, .93]
-        self.state = "normal"
+        self.velocity = -self.velocity
+        if not self.timer:
+            self.state = "normal"
+        else:
+            self.state = "scatter"
 
 
 class PacGame(Widget):
@@ -719,6 +943,7 @@ class PacGame(Widget):
     grid = [["wall" for i in range(21)]for j in range(22)]
     super_dots = []
     powerup = False
+    power_timer = 0
 
     def __init__(self, **kwargs):
         super(PacGame, self).__init__(**kwargs)
@@ -753,7 +978,7 @@ class PacGame(Widget):
                 self.move_ghosts()
                 self.check_ghost_collision()
                 self.check_dot_collision()
-                if not self.dots:
+                if not self.dots and not self.super_dots:
                     self.win()
 
     def redraw(self, widget=None):
@@ -768,12 +993,14 @@ class PacGame(Widget):
             self.redraw(self.clyde)
 
     def powered(self):
+        if self.powerup:
+            Clock.unschedule(self.power_timer)
         self.blinky.scared()
         self.inky.scared()
         self.pinky.scared()
         self.clyde.scared()
         self.powerup = True
-        Clock.schedule_once(self.unpower, 5)
+        self.power_timer = Clock.schedule_once(self.unpower, 5)
 
     def unpower(self, dt):
         self.blinky.reset_color()
@@ -820,15 +1047,19 @@ class PacGame(Widget):
                     self.grid[i[0]][i[1]+j] = "v"
 
     def move_ghosts(self):
+        if self.blinky.step == 3:
+            self.pinky.step = 3
+            self.inky.step = 3
+            self.clyde.step = 3
         self.blinky.move(self.grid, self.pac.center_x, self.pac.center_y)
-        self.pinky.move(self.grid, self.pac.center_x, self.pac.center_y)
+        self.pinky.move(self.grid, self.pac.center_x, self.pac.center_y, self.pac.velocity)
         self.inky.move(self.grid, self.pac.center_x, self.pac.center_y)
         self.clyde.move(self.grid, self.pac.center_x, self.pac.center_y)
 
     def check_ghost_collision(self):
         if self.pac.collide_point(self.blinky.center_x, self.blinky.center_y):
             if self.blinky.state == "scared":
-                self.blinky.setup()
+                self.blinky.setup(1)
             else:
                 self.lives += -1
                 self.pac.dead = True
@@ -853,7 +1084,7 @@ class PacGame(Widget):
 
     def check_dot_collision(self):
         for i in self.super_dots:
-            if self.pac.collide_point(i[0], i[1]):
+            if self.pac.collide_point(i[0] + 8, i[1] + 8):
                 self.powered()
                 with self.canvas:
                     Color(0, 0, 0)
@@ -871,6 +1102,8 @@ class PacGame(Widget):
                     Ellipse(pos=(i[0], i[1]), size=(8, 8))
                 self.redraw()
                 break
+        if self.dots.__len__() < 60:
+            self.blinky.speed = 2
 
     def respawn_player(self, arg=1):
         self.inky.setup()
