@@ -90,26 +90,6 @@ class Pac(Widget):
         self.start_angle = -50 + val
         self.end_angle = 230 + val
 
-    def chomp(self):
-        if self.start_angle == -90 + self.rotation:
-            self.chomp_down = False
-        if self.start_angle == -50 + self.rotation:
-            self.chomp_down = True
-        if self.chomp_down:
-            self.start_angle += -1
-            self.end_angle += 1
-        else:
-            self.end_angle += -1
-            self.start_angle += 1
-
-
-class TrackH(Widget):
-    length = NumericProperty(608)
-
-
-class TrackV(Widget):
-    length = NumericProperty(672)
-
 
 class Blinky(Widget):
     m_left = False
@@ -225,7 +205,6 @@ class Blinky(Widget):
     def chase(self, pac_x, pac_y):
         if not self.step == 3:
             self.chase_timer += -1
-            print(self.step)
             if not self.chase_timer:
                 self.step += 1
                 self.state = "scatter"
@@ -927,8 +906,6 @@ class PacGame(Widget):
     pinky = ObjectProperty(None)
     inky = ObjectProperty(None)
     clyde = ObjectProperty(None)
-    h_tracks = ListProperty()
-    v_tracks = ListProperty()
     dots = ListProperty()
     score = NumericProperty(0)
     lives = NumericProperty(3)
@@ -944,11 +921,14 @@ class PacGame(Widget):
     super_dots = []
     powerup = False
     power_timer = 0
+    h_positions = []
+    v_positions = []
 
     def __init__(self, **kwargs):
         super(PacGame, self).__init__(**kwargs)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        self.get_positions()
         self.build_level()
         self.status.text = "Ready?"
         self.redraw(self.status)
@@ -993,6 +973,7 @@ class PacGame(Widget):
             self.redraw(self.clyde)
 
     def powered(self):
+        #if we already are powered just reset the timer
         if self.powerup:
             Clock.unschedule(self.power_timer)
         self.blinky.scared()
@@ -1125,7 +1106,6 @@ class PacGame(Widget):
         self.ready_check = True
 
     def win(self):
-
         self.status.text = "You Win"
         self.status2.text = "Press Enter to Restart"
         self.ready_check = True
@@ -1135,28 +1115,33 @@ class PacGame(Widget):
             self.pac.dead = False
             self.respawn_player(0)
 
+    def get_positions(self):
+        self.h_positions = [(0, 0, 19), (0, 2, 5), (6, 2, 3), (10, 2, 3), (14, 2, 5), (0, 4, 3), (4, 4, 11), (16, 4, 3),
+                       (0, 6, 9), (10, 6, 9),
+                       (6, 8, 7), (-1, 10, 8), (12, 10, 8), (6, 12, 7), (0, 14, 5), (6, 14, 3), (10, 14, 3),
+                       (14, 14, 5), (0, 16, 19),
+                       (0, 19, 9), (10, 19, 9)]
+        self.v_positions = [(0, 0, 3), (8, 0, 3), (10, 0, 3), (18, 0, 3), (2, 2, 3), (4, 2, 18), (6, 2, 3), (12, 2, 3),
+                       (14, 2, 18), (16, 2, 3), (0, 4, 3),
+                       (8, 4, 3), (10, 4, 3), (18, 4, 3), (6, 6, 7), (12, 6, 7), (8, 12, 3), (10, 12, 3), (0, 14, 6),
+                       (6, 14, 3), (12, 14, 3),
+                       (18, 14, 6), (8, 16, 4), (10, 16, 4)]
+        #later pull in these positions from file or something to build new levels.
+
     def build_level(self):
-        # h_positions = (#tiles x, #tiles y, #tiles length)
-        h_positions = [(0,0,19), (0,2,5), (6,2,3), (10,2,3), (14,2,5), (0,4,3), (4,4,11), (16,4,3), (0,6,9), (10,6,9),
-                       (6,8,7), (-1,10,8), (12,10,8), (6,12,7), (0,14,5), (6,14,3), (10,14,3), (14,14,5), (0,16,19),
-                       (0,19,9), (10,19,9)]
-        v_positions = [(0,0,3),(8,0,3),(10,0,3),(18,0,3),(2,2,3),(4,2,18),(6,2,3),(12,2,3),(14,2,18),(16,2,3), (0,4,3),
-                      (8,4,3),(10,4,3),(18,4,3),(6,6,7), (12,6,7), (8,12,3),(10,12,3),(0,14,6),(6,14,3),(12,14,3),
-                                                          (18,14,6), (8,16,4), (10,16,4)]
+        for i in self.h_positions:
+            with self.canvas:
+                Color(0,0,0)
+                Rectangle(pos=(self.x_marg + (self.tile * i[0]), self.y_marg + (self.tile * i[1])),
+                          size=(i[2] * self.tile,self.tile))
 
-        for i in h_positions:
-            track = TrackH(Color=(1,1,1,1),pos=(self.x_marg + (self.tile * i[0]), self.y_marg + (self.tile * i[1])))
-            track.length = i[2] * self.tile
-            self.h_tracks.append(track)
-            self.add_widget(track)
+        for i in self.v_positions:
+            with self.canvas:
+                Color(0,0,0)
+                Rectangle(pos=(self.x_marg + (self.tile * i[0]), self.y_marg + (self.tile * i[1])),
+                          size=(self.tile,self.tile * i[2]))
 
-        for i in v_positions:
-            track = TrackV(Color=(1, 1, 1, 1), pos=(self.x_marg + (self.tile * i[0]), self.y_marg + (self.tile * i[1])))
-            track.length = i[2] * self.tile
-            self.v_tracks.append(track)
-            self.add_widget(track)
         self.draw_dots()
-
         with self.canvas:
             Color(0, 0, 0)
             Rectangle(pos=(self.x_marg + (self.tile * 7) + 4, self.y_marg + (self.tile * 8) + 80 /2), size=(152, 80))
@@ -1164,32 +1149,32 @@ class PacGame(Widget):
             Rectangle(pos=(self.x_marg + (self.tile * 9)- 4, self.y_marg + (self.tile * 12) - 8), size=(40, 8))
 
     def draw_dots(self):
-        super = [(self.tile, 64), (self.tile * 19, 64), (self.tile, self.tile * 19), (self.tile * 19, self.tile * 19)]
-        for t in self.h_tracks:
-            y_dot = t.center_y - 4
-            x_dot = t.x + (self.tile / 2) - 4
-            if x_dot < self.x_marg:                                          # makes sure left portal doesn't have dots
+        for p in self.h_positions:
+            y_dot = (p[1] * self.tile) + (self.tile / 2) - 4 + self.y_marg
+            x_dot = (p[0] * self.tile) + (self.tile / 2) - 4 + self.x_marg
+            if x_dot < self.x_marg:     # makes sure left portal doesn't have dots
                 x_dot += self.x_marg
-            for i in range(t.width / self.tile):
+            for i in range(p[2]):
                 # check to not draw dots around spawn area or portal tracks
-                if t.y == self.y_marg + (self.tile * 10):
-                    break
+                if y_dot == (self.tile * 10) + (self.tile/2) - 4 + self.y_marg:
+                    x_dot += self.tile
+                    break;
                 if x_dot < (self.tile * 5) + self.x_marg or x_dot > (self.tile * 14) + self.x_marg or\
-                                y_dot < (self.tile * 8) + self.y_marg or y_dot > (self.tile * 14) + self.y_marg:
+                        y_dot < (self.tile * 8) + self.y_marg or y_dot > (self.tile * 14) + self.y_marg:
                         with self.canvas:
                             Color(244, 244, 230)
                             Ellipse(pos=(x_dot, y_dot), size=(8, 8))
                             self.dots.append((x_dot, y_dot))
                             x_dot += self.tile
-                            if x_dot > 640 or x_dot > t.right:          # keeps the portals from misplacing dots
+                            if x_dot > 640 or x_dot > (p[0] + p[2]) * self.tile:          # keeps the portals from misplacing dots
                                 break
                 else:
                     x_dot += self.tile
 
-        for t in self.v_tracks:
-            y_dot = t.y + (self.tile/2) - 4
-            x_dot = t.center_x - 4
-            for i in range(t.height / self.tile):
+        for p in self.v_positions:
+            y_dot = (p[1] * self.tile) + (self.tile / 2) - 4 + self.y_marg
+            x_dot = (p[0] * self.tile) + (self.tile / 2) - 4 + self.x_marg
+            for i in range(p[2]):
                 # check to not draw dots around spawn
                 if (x_dot, y_dot) not in self.dots and y_dot < (self.tile * 7) + self.y_marg or\
                                 y_dot > (self.tile * 14) + self.y_marg or x_dot < (self.tile * 5) + self.x_marg or\
