@@ -14,24 +14,25 @@ class Pac(Widget):
     rotation = 0
     start_angle = NumericProperty(-50)  # -90 = closed mouth
     end_angle = NumericProperty(230)    # 270 = closed mouth
-    dead = False
-    curr_key = ''
-    m_right = False
+    dead = False                        # keeps track of current state
+    curr_key = ''                       # user input buffer
+    m_right = False                     # these tell the possible directions to move
     m_left = False
     m_up = False
     m_down = False
-    chomp_down = True
 
     def setup(self):
+        # Reset Pac to his default states and start positions.
         self.pos = self.parent.x_marg + (32 * 9), self.parent.y_marg + (32 * 4)
         self.dead = False
         self.rotation = 0
         self.curr_key = ''
         self.start_angle = -50
         self.end_angle = 230
-        self.velocity = Vector(0,0)
+        self.velocity = Vector(0, 0)
 
     def change_direction(self, grid):
+        # Change direction based on the last input received if it is a possible move.
         self.check_moves(grid)
 
         if self.curr_key == 'right' and self.m_right:
@@ -48,6 +49,7 @@ class Pac(Widget):
             self.velocity = Vector(0, -1)
 
     def check_moves(self, grid):
+        # Check to see which moves are valid and stop us if we've hit a wall.
         self.m_down = False
         self.m_up = False
         self.m_left = False
@@ -78,6 +80,7 @@ class Pac(Widget):
                     self.velocity.y = 0
 
     def update_pos(self, grid):
+        # Try to change direction then update position based on the velocity.
         self.change_direction(grid)
         if self.x < self.parent.x_marg - 10:
             self.pos = 604,self.y
@@ -86,6 +89,7 @@ class Pac(Widget):
         self.pos = (self.velocity * self.speed) + self.pos
 
     def rotate(self, val):
+        # Rotate pac by val.
         self.rotation = val
         self.start_angle = -50 + val
         self.end_angle = 230 + val
@@ -106,12 +110,13 @@ class Blinky(Widget):
     step = 0
 
     def setup(self, ate=0):
+        # Set blinky back to default settings and position.
         self.pos = self.parent.x_marg + (32 * 9), self.parent.y_marg + (32 * 12)
         self.velocity = Vector(1, 0)
         self.scatter_timer = 100
         self.speed = 1
         self.last_move = "right"
-        if not ate:
+        if not ate:             # If this is a restart not a respawn.
             self.step = 0
             self.state = "scatter"
             self.scatter_timer = 300
@@ -119,6 +124,7 @@ class Blinky(Widget):
         self.state = "normal"
 
     def move(self, grid, pac_x, pac_y):
+        # Decide what movement state we are in then call that method.
         self.check_moves(grid)
         if self.state == "normal":
             self.chase(pac_x, pac_y)
@@ -126,6 +132,7 @@ class Blinky(Widget):
             self.run(pac_x, pac_y)
         elif self.state == "scatter":
             self.scatter()
+        # Portal teleport code.
         self.pos = self.velocity * self.speed + self.pos
         if self.x >= self.parent.map_l + 10:
             self.x = self.parent.x_marg
@@ -133,6 +140,7 @@ class Blinky(Widget):
             self.x = self.parent.map_l
 
     def scatter(self):
+        # Paths blinky towards his respective corner.
         target_x = self.parent.map_l + self.parent.x_marg
         target_y = self.parent.map_h + self.parent.y_marg
         self.scatter_timer += -1
@@ -172,6 +180,7 @@ class Blinky(Widget):
                     self.velocity = Vector(0, -1)
 
     def run(self, pac_x, pac_y):
+        # Runs away from pac.
         if self.last_move == "up" or self.last_move == "down":
             if pac_x > self.center_x and self.m_left:
                 self.last_move = "left"
@@ -203,6 +212,7 @@ class Blinky(Widget):
                     self.velocity = Vector(0, -1)
 
     def chase(self, pac_x, pac_y):
+        # Chase pac's direct position.
         if not self.step == 3:
             self.chase_timer += -1
             if not self.chase_timer:
@@ -241,6 +251,7 @@ class Blinky(Widget):
                     self.velocity = Vector(0, -1)
 
     def check_moves(self, grid):
+        # Check valid moves and stop if at wall.
         self.m_down = False
         self.m_up = False
         self.m_left = False
@@ -271,11 +282,13 @@ class Blinky(Widget):
                     self.velocity.y = 0
 
     def scared(self):
+        # State change when pac is powered
         self.color = [0,0,1]
         self.state = "scared"
         self.velocity = -self.velocity
 
     def reset_color(self):
+        # Resets state.
         self.state = "normal"
         self.color = [.82, .24, .09]
         self.velocity = -self.velocity
@@ -925,32 +938,35 @@ class PacGame(Widget):
     v_positions = []
 
     def __init__(self, **kwargs):
+        # Initialize keyboards, build the level, populate grid then draw ready status.
         super(PacGame, self).__init__(**kwargs)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
-        self.get_positions()
         self.build_level()
         self.status.text = "Ready?"
         self.redraw(self.status)
         self.redraw()
-        self.draw_grid()
+        self.fill_grid()
 
     def _keyboard_closed(self):
+        # Unbind keyboard upon closing.
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
         self._keyboard = None
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        # When a key is pressed we update pac's curr_key.
         self.pac.curr_key = keycode[1]
-        if self.ready_check:
+        if self.ready_check:        # If we are in ready check take us out when a key is pressed.
             self.ready_check = False
 
     def update(self, dt):
-        if not self.ready_check:
-            if self.pac.dead:
+        # Main update loop of program.
+        if not self.ready_check:    # If we aren't in ready check contiue with normal game loop.
+            if self.pac.dead:       # If pac is dead reset ghosts and pac.
                 self.status.text = "You Died"
                 self.redraw(self.status)
                 self.death()
-            elif not self.pac.dead:
+            elif not self.pac.dead: # If not dead update positions, clear status then check collisions.
                 self.pac.update_pos(self.grid)
                 if not self.status == '':
                     self.status.text = ''
@@ -958,10 +974,12 @@ class PacGame(Widget):
                 self.move_ghosts()
                 self.check_ghost_collision()
                 self.check_dot_collision()
-                if not self.dots and not self.super_dots:
+                if not self.dots and not self.super_dots:   # If no more dots then end the game.
                     self.win()
 
     def redraw(self, widget=None):
+        # Method to redraw widgets to put them on top of the visual stack.
+        # If we specify a widget only redraw it else redraw all main widgets.
         if widget:
             self.remove_widget(widget)
             self.add_widget(widget)
@@ -973,7 +991,8 @@ class PacGame(Widget):
             self.redraw(self.clyde)
 
     def powered(self):
-        #if we already are powered just reset the timer
+        # Changes ghost states and sets powerup timer.
+        # If we already are powered reset the timer.
         if self.powerup:
             Clock.unschedule(self.power_timer)
         self.blinky.scared()
@@ -984,6 +1003,7 @@ class PacGame(Widget):
         self.power_timer = Clock.schedule_once(self.unpower, 5)
 
     def unpower(self, dt):
+        # When timer runs out we reset any scared ghosts.
         self.blinky.reset_color()
         if self.inky.state == "scared":
             self.inky.reset_color()
@@ -994,33 +1014,30 @@ class PacGame(Widget):
         self.powerup = False
 
     def death(self):
-        if self.pac.end_angle > 90 + self.pac.rotation:
+        # Perform respawning unless player is out of lives.
+        if self.pac.end_angle > 90 + self.pac.rotation:  # Death animation.
             self.pac.start_angle += 1
             self.pac.end_angle -= 1
         elif self.lives > 0:
             self.respawn_player()
         else:
+            # Display game over status and wait for restart.
             self.status.text = "You Lose"
             self.status2.text = "Press Enter to Restart"
             if self.pac.curr_key == "enter":
                 self.pac.dead = False
-                self.respawn_player(0)
+                self.respawn_player(True)
             self.redraw(self.status)
             self.redraw(self.status2)
 
-    def draw_grid(self):
-        h_positions = [(0, 0, 19), (0, 2, 5), (6, 2, 3), (10, 2, 3), (14, 2, 5), (0, 4, 3), (4, 4, 11), (16, 4, 3),
-                       (0, 6, 9), (10, 6, 9), (6, 8, 7), (-1, 10, 8), (12, 10, 8), (6, 12, 7), (0, 14, 5), (6, 14, 3),
-                       (10, 14, 3), (14, 14, 5), (0, 16, 19), (0, 19, 9), (10, 19, 9)]
-        v_positions = [(0, 0, 3), (8, 0, 3), (10, 0, 3), (18, 0, 3), (2, 2, 3), (4, 2, 18), (6, 2, 3), (12, 2, 3),
-                       (14, 2, 18), (16, 2, 3), (0, 4, 3), (8, 4, 3), (10, 4, 3), (18, 4, 3), (6, 6, 7), (12, 6, 7),
-                       (8, 12, 3), (10, 12, 3), (0, 14, 6), (6, 14, 3), (12, 14, 3), (18, 14, 6), (8, 16, 4), (10, 16, 4)]
+    def fill_grid(self):
+        # Draw out the grid based on h_positions and v_positions.
 
-        for i in h_positions:
+        for i in self.h_positions:
             for j in range(i[2]):
                 self.grid[i[0] + j][i[1]] = "h"
 
-        for i in v_positions:
+        for i in self.v_positions:
             for j in range(i[2]):
                 if self.grid[i[0]][i[1]+j] == "h":
                     self.grid[i[0]][i[1]+j] = "hv"
@@ -1028,7 +1045,8 @@ class PacGame(Widget):
                     self.grid[i[0]][i[1]+j] = "v"
 
     def move_ghosts(self):
-        if self.blinky.step == 3:
+        # Call all the movement methods for ghosts.
+        if self.blinky.step == 3:   # When blinky finishes wave steps everyone else finishes.
             self.pinky.step = 3
             self.inky.step = 3
             self.clyde.step = 3
@@ -1038,6 +1056,8 @@ class PacGame(Widget):
         self.clyde.move(self.grid, self.pac.center_x, self.pac.center_y)
 
     def check_ghost_collision(self):
+        # Determine if pac collides witha  ghost and decide what to do depending on their state.
+        # If a ghost is scared we respawn it else we set pac's death state to true.
         if self.pac.collide_point(self.blinky.center_x, self.blinky.center_y):
             if self.blinky.state == "scared":
                 self.blinky.setup(1)
@@ -1064,6 +1084,8 @@ class PacGame(Widget):
                 self.pac.dead = True
 
     def check_dot_collision(self):
+        # Check for any dots we are eating and remove/cover them up with a black dot to hide them.
+        # Then we redraw the widgets over the black dot and increment the score.
         for i in self.super_dots:
             if self.pac.collide_point(i[0] + 8, i[1] + 8):
                 self.powered()
@@ -1083,16 +1105,19 @@ class PacGame(Widget):
                     Ellipse(pos=(i[0], i[1]), size=(8, 8))
                 self.redraw()
                 break
-        if self.dots.__len__() < 60:
+        if self.dots.__len__() < 60:    # If they're close to winning speedup blinky.
             self.blinky.speed = 2
 
-    def respawn_player(self, arg=1):
+    def respawn_player(self, restart=False):
+        # Respawns the player and ghosts then perfroms ready check.
+        # If restart is true perform all the resetting needed to start the game over again.
+        # Setup each player, reset all counters, redraw dots, and set status and perform ready check.
         self.inky.setup()
         self.pinky.setup()
         self.clyde.setup()
         self.pac.setup()
         self.blinky.setup()
-        if arg == 0:
+        if restart:
             self.lives = 3
             self.draw_dots()
             self.score = 0
@@ -1106,6 +1131,7 @@ class PacGame(Widget):
         self.ready_check = True
 
     def win(self):
+        # Display win status and wait for input to reset game.
         self.status.text = "You Win"
         self.status2.text = "Press Enter to Restart"
         self.ready_check = True
@@ -1113,9 +1139,10 @@ class PacGame(Widget):
         self.redraw(self.status2)
         if self.pac.curr_key == "enter":
             self.pac.dead = False
-            self.respawn_player(0)
+            self.respawn_player(True)
 
     def get_positions(self):
+        # Used later to pull in positions from files or other sources.
         self.h_positions = [(0, 0, 19), (0, 2, 5), (6, 2, 3), (10, 2, 3), (14, 2, 5), (0, 4, 3), (4, 4, 11), (16, 4, 3),
                        (0, 6, 9), (10, 6, 9),
                        (6, 8, 7), (-1, 10, 8), (12, 10, 8), (6, 12, 7), (0, 14, 5), (6, 14, 3), (10, 14, 3),
@@ -1126,9 +1153,11 @@ class PacGame(Widget):
                        (8, 4, 3), (10, 4, 3), (18, 4, 3), (6, 6, 7), (12, 6, 7), (8, 12, 3), (10, 12, 3), (0, 14, 6),
                        (6, 14, 3), (12, 14, 3),
                        (18, 14, 6), (8, 16, 4), (10, 16, 4)]
-        #later pull in these positions from file or something to build new levels.
+        # later pull in these positions from file or something to build new levels.
 
     def build_level(self):
+        # Draw the tracks then place dots on them as well as draw the ghost house.
+        self.get_positions()
         for i in self.h_positions:
             with self.canvas:
                 Color(0,0,0)
@@ -1142,13 +1171,14 @@ class PacGame(Widget):
                           size=(self.tile,self.tile * i[2]))
 
         self.draw_dots()
-        with self.canvas:
+        with self.canvas:   # Draw ghost house / spawn room.
             Color(0, 0, 0)
             Rectangle(pos=(self.x_marg + (self.tile * 7) + 4, self.y_marg + (self.tile * 8) + 80 /2), size=(152, 80))
             Color(1, 1, 1)
             Rectangle(pos=(self.x_marg + (self.tile * 9)- 4, self.y_marg + (self.tile * 12) - 8), size=(40, 8))
 
     def draw_dots(self):
+        # Draw the dots in each tile along valid tracks.
         for p in self.h_positions:
             y_dot = (p[1] * self.tile) + (self.tile / 2) - 4 + self.y_marg
             x_dot = (p[0] * self.tile) + (self.tile / 2) - 4 + self.x_marg
@@ -1202,8 +1232,8 @@ class PacmanApp(App):
         Config.set('modules', 'monitor','')
         game = PacGame()
         Window.size = (672, 704)
-        Window.top = 100
-        Clock.schedule_interval(game.update, 20/60)
+        Window.top = 100 # Set top position of window.
+        Clock.schedule_interval(game.update, 20/60) # Update speed for game loop.
         return game
 
 
