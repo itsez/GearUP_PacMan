@@ -1108,6 +1108,7 @@ class PacGame(Widget):
                 break
         if self.dots.__len__() < 60:    # If they're close to winning speedup blinky.
             self.blinky.speed = 2
+            self.blinky.step = 3
 
     def respawn_player(self, restart=False):
         # Respawns the player and ghosts then perfroms ready check.
