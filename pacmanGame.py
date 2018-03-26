@@ -61,7 +61,6 @@ class Pac(Widget):
                     self.m_left = True
                 elif self.velocity.x == -1 and self.x % 32 == 0:
                     self.velocity.x = 0
-
                 if not grid[gx+1][gy] == 'wall':
                     self.m_right = True
                 elif self.velocity.x == 1:
@@ -126,7 +125,7 @@ class Blinky(Widget):
             self.run(pac_x, pac_y)
         elif self.state == "scatter":
             self.scatter()
-        self.pos = self.velocity * self.speed + self.pos
+        self.pos = (self.velocity * self.speed) + self.pos
         if self.x >= self.parent.map_l + 10:
             self.x = self.parent.x_marg
         if self.x <= self.parent.x_marg - 10:
@@ -248,7 +247,7 @@ class Blinky(Widget):
 
         gx = int((self.x / self.parent.tile) - (self.parent.x_marg / self.parent.tile))
         gy = int((self.y / self.parent.tile) - (self.parent.y_marg / self.parent.tile))
-        if self.y % 32 == 0:  # check to make sure we are centered
+        if self.y % 32 < self.speed:  # check to make sure we are centered
             if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv':
                 if not grid[gx - 1][gy] == 'wall':
                     self.m_left = True
@@ -259,7 +258,7 @@ class Blinky(Widget):
                     self.m_right = True
                 elif self.velocity.x == 1:
                     self.velocity.x = 0
-        if self.x % 32 == 0:
+        if self.x % 32 < self.speed:
             if grid[gx][gy] == 'v' or grid[gx][gy] == 'hv' and self.y % 32 == 0:
                 if not grid[gx][gy - 1] == 'wall':
                     self.m_down = True
@@ -269,6 +268,8 @@ class Blinky(Widget):
                     self.m_up = True
                 elif self.velocity.y == 1:
                     self.velocity.y = 0
+        elif self.velocity.x == 0 and self.velocity.y == 0:
+            print(self.x%32)
 
     def scared(self):
         self.color = [0,0,1]
