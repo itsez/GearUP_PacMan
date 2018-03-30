@@ -5,7 +5,6 @@ from kivy.core.window import Window
 from kivy.vector import Vector
 from kivy.clock import Clock
 from kivy.graphics import Color, Ellipse, Rectangle
-from kivy.config import Config
 
 
 class Pac(Widget):
@@ -82,7 +81,7 @@ class Pac(Widget):
         # Try to change direction then update position based on the velocity.
         self.change_direction(grid)
         if self.x < self.parent.x_marg - 10:
-            self.pos = 604,self.y
+            self.pos = 604, self.y
         elif self.x > self.parent.map_l + 10:
             self.pos = self.parent.x_marg, self.y
         self.pos = (self.velocity * self.speed) + self.pos
@@ -258,29 +257,26 @@ class Blinky(Widget):
 
         gx = int((self.x / self.parent.tile) - (self.parent.x_marg / self.parent.tile))
         gy = int((self.y / self.parent.tile) - (self.parent.y_marg / self.parent.tile))
-        if self.y % 32 < self.speed:  # check to make sure we are centered
+        if self.y % 32 == 0:  # check to make sure we are centered
             if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv':
-                if not grid[gx - 1][gy] == 'wall':
+                if not grid[gx-1][gy] == 'wall':
                     self.m_left = True
                 elif self.velocity.x == -1 and self.x % 32 == 0:
                     self.velocity.x = 0
-
-                if not grid[gx + 1][gy] == 'wall':
+                if not grid[gx+1][gy] == 'wall':
                     self.m_right = True
                 elif self.velocity.x == 1:
                     self.velocity.x = 0
-        if self.x % 32 < self.speed:
+        if self.x % 32 == 0:
             if grid[gx][gy] == 'v' or grid[gx][gy] == 'hv' and self.y % 32 == 0:
-                if not grid[gx][gy - 1] == 'wall':
+                if not grid[gx][gy-1] == 'wall':
                     self.m_down = True
                 elif self.velocity.y == -1:
                     self.velocity.y = 0
-                if not grid[gx][gy + 1] == 'wall':
+                if not grid[gx][gy+1] == 'wall':
                     self.m_up = True
                 elif self.velocity.y == 1:
                     self.velocity.y = 0
-        elif self.velocity.x == 0 and self.velocity.y == 0:
-            print(self.x%32)
 
     def scared(self):
         # State change when pac is powered
@@ -473,22 +469,21 @@ class Pinky(Widget):
         gy = int((self.y / self.parent.tile) - (self.parent.y_marg / self.parent.tile))
         if self.y % 32 == 0:  # check to make sure we are centered
             if grid[gx][gy] == 'h' or grid[gx][gy] == 'hv':
-                if not grid[gx - 1][gy] == 'wall':
+                if not grid[gx-1][gy] == 'wall':
                     self.m_left = True
                 elif self.velocity.x == -1 and self.x % 32 == 0:
                     self.velocity.x = 0
-
-                if not grid[gx + 1][gy] == 'wall':
+                if not grid[gx+1][gy] == 'wall':
                     self.m_right = True
                 elif self.velocity.x == 1:
                     self.velocity.x = 0
         if self.x % 32 == 0:
             if grid[gx][gy] == 'v' or grid[gx][gy] == 'hv' and self.y % 32 == 0:
-                if not grid[gx][gy - 1] == 'wall':
+                if not grid[gx][gy-1] == 'wall':
                     self.m_down = True
                 elif self.velocity.y == -1:
                     self.velocity.y = 0
-                if not grid[gx][gy + 1] == 'wall':
+                if not grid[gx][gy+1] == 'wall':
                     self.m_up = True
                 elif self.velocity.y == 1:
                     self.velocity.y = 0
@@ -517,7 +512,7 @@ class Clyde(Widget):
     velocity = Vector(0, -1)
     last_move = "horizontal"
     timer = 1400
-    color = ListProperty([.86,.52,.11])
+    color = ListProperty([.86, .52, .11])
     state = "spawning"
     step = 0
 
@@ -713,7 +708,7 @@ class Inky(Widget):
     last_move = "right"
     timer = 1000
     chase_timer = 0
-    color = ListProperty([.27,.74,.93])
+    color = ListProperty([.27, .74, .93])
     state = "spawning"
     step = 0
 
@@ -962,7 +957,7 @@ class PacGame(Widget):
 
     def update(self, dt):
         # Main update loop of program.
-        if not self.ready_check:    # If we aren't in ready check contiue with normal game loop.
+        if not self.ready_check:    # If we aren't in ready check continue with normal game loop.
             if self.pac.dead:       # If pac is dead reset ghosts and pac.
                 self.status.text = "You Died"
                 self.redraw(self.status)
@@ -1107,8 +1102,8 @@ class PacGame(Widget):
                 self.redraw()
                 break
         if self.dots.__len__() < 60:    # If they're close to winning speedup blinky.
-            self.blinky.speed = 2
             self.blinky.step = 3
+            self.blinky.speed = 2
 
     def respawn_player(self, restart=False):
         # Respawns the player and ghosts then perfroms ready check.
@@ -1231,11 +1226,10 @@ class PacGame(Widget):
 class PacmanApp(App):
     def build(self):
         # ordering for game initialization
-        Config.set('modules', 'monitor','')
         game = PacGame()
         Window.size = (672, 704)
-        Window.top = 100 # Set top position of window.
-        Clock.schedule_interval(game.update, 20/60) # Update speed for game loop.
+        Window.top = 100  # Set top position of window.
+        Clock.schedule_interval(game.update, 1/60)  # Update speed for game loop.
         return game
 
 
