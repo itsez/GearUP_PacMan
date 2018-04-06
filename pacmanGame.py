@@ -931,7 +931,7 @@ class PacGame(Widget):
     status2 = ObjectProperty()
     ready_check = True
     tile = 32  # size of tile
-    map_l = (20 * tile)  # length of map
+    map_l = (19 * tile)  # length of map
     map_h = (20 * tile)  # height of map
     x_marg = tile  # margin size for sides of window
     y_marg = tile  # margin size for top and bottom
