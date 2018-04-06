@@ -8,7 +8,7 @@ from kivy.graphics import Color, Ellipse, Rectangle
 
 
 class Pac(Widget):
-    speed = 2
+    speed = 2                           # must be even number
     velocity = Vector(0, 0)
     rotation = 0
     start_angle = NumericProperty(-50)  # -90 = closed mouth
@@ -80,10 +80,14 @@ class Pac(Widget):
     def update_pos(self, grid):
         # Try to change direction then update position based on the velocity.
         self.change_direction(grid)
-        if self.x < self.parent.x_marg - 10:
-            self.pos = 604, self.y
-        elif self.x > self.parent.map_l + 10:
-            self.pos = self.parent.x_marg, self.y
+        if self.x >= self.parent.map_l + 10:
+            self.x = self.parent.x_marg
+        if self.x <= self.parent.x_marg - 10:
+            self.x = self.parent.map_l
+        if self.y >= self.parent.map_h + 10:
+            self.y = self.parent.y_marg
+        if self.y <= self.parent.y_marg - 10:
+            self.y = self.parent.map_h
         self.pos = (self.velocity * self.speed) + self.pos
 
     def rotate(self, val):
@@ -267,6 +271,7 @@ class Blinky(Widget):
                     self.m_right = True
                 elif self.velocity.x == 1:
                     self.velocity.x = 0
+                    self.x = self.x + self.x % 32
         if self.x % 32 == 0:
             if grid[gx][gy] == 'v' or grid[gx][gy] == 'hv' and self.y % 32 == 0:
                 if not grid[gx][gy-1] == 'wall':
@@ -738,6 +743,10 @@ class Inky(Widget):
             self.x = self.parent.x_marg
         if self.x <= self.parent.x_marg - 10:
             self.x = self.parent.map_l
+        if self.y >= self.parent.map_h + 10:
+            self.y = self.parent.y_marg
+        if self.y <= self.parent.y_marg - 10:
+            self.y = self.parent.map_h
 
     def spawning(self):
         self.timer += -1
@@ -922,7 +931,7 @@ class PacGame(Widget):
     status2 = ObjectProperty()
     ready_check = True
     tile = 32  # size of tile
-    map_l = (19 * tile)  # length of map
+    map_l = (20 * tile)  # length of map
     map_h = (20 * tile)  # height of map
     x_marg = tile  # margin size for sides of window
     y_marg = tile  # margin size for top and bottom
@@ -932,6 +941,8 @@ class PacGame(Widget):
     power_timer = 0
     h_positions = []
     v_positions = []
+    h_exclude_dots = []
+    v_exclude_dots = []
 
     def __init__(self, **kwargs):
         # Initialize keyboards, build the level, populate grid then draw ready status.
@@ -943,6 +954,7 @@ class PacGame(Widget):
         self.redraw(self.status)
         self.redraw()
         self.fill_grid()
+        Window.size = (self.map_l + self.x_marg * 2, self.map_h + self.y_marg * 2)
 
     def _keyboard_closed(self):
         # Unbind keyboard upon closing.
@@ -1026,20 +1038,6 @@ class PacGame(Widget):
             self.redraw(self.status)
             self.redraw(self.status2)
 
-    def fill_grid(self):
-        # Draw out the grid based on h_positions and v_positions.
-
-        for i in self.h_positions:
-            for j in range(i[2]):
-                self.grid[i[0] + j][i[1]] = "h"
-
-        for i in self.v_positions:
-            for j in range(i[2]):
-                if self.grid[i[0]][i[1]+j] == "h":
-                    self.grid[i[0]][i[1]+j] = "hv"
-                else:
-                    self.grid[i[0]][i[1]+j] = "v"
-
     def move_ghosts(self):
         # Call all the movement methods for ghosts.
         if self.blinky.step == 3:   # When blinky finishes wave steps everyone else finishes.
@@ -1083,12 +1081,12 @@ class PacGame(Widget):
         # Check for any dots we are eating and remove/cover them up with a black dot to hide them.
         # Then we redraw the widgets over the black dot and increment the score.
         for i in self.super_dots:
-            if self.pac.collide_point(i[0] + 8, i[1] + 8):
+            if self.pac.collide_point(i[0] * self.tile + 8 + self.x_marg, i[1] * self.tile + 8 + self.y_marg):
                 self.powered()
                 with self.canvas:
                     Color(0, 0, 0)
-                    Ellipse(pos=(i[0] + 8, i[1] + 8), size=(16, 16))
-                self.score += 1
+                    Ellipse(pos=(i[0] * self.tile + 8 + self.x_marg, i[1] * self.tile + 8 + self.y_marg), size=(16, 16))
+                self.score += 9
                 self.super_dots.remove(i)
                 self.redraw()
                 break
@@ -1140,17 +1138,34 @@ class PacGame(Widget):
 
     def get_positions(self):
         # Used later to pull in positions from files or other sources.
+        # tracks that go outside of margins are treated as portals.
+        # tracks must be placed according to standard pacman track placement
+        # all tracks of same type must have a wall between them.
         self.h_positions = [(0, 0, 19), (0, 2, 5), (6, 2, 3), (10, 2, 3), (14, 2, 5), (0, 4, 3), (4, 4, 11), (16, 4, 3),
-                       (0, 6, 9), (10, 6, 9),
-                       (6, 8, 7), (-1, 10, 8), (12, 10, 8), (6, 12, 7), (0, 14, 5), (6, 14, 3), (10, 14, 3),
-                       (14, 14, 5), (0, 16, 19),
-                       (0, 19, 9), (10, 19, 9)]
+                            (0, 6, 9), (10, 6, 9), (6, 8, 7), (-1, 10, 8), (12, 10, 8), (6, 12, 7), (0, 14, 5),
+                            (6, 14, 3), (10, 14, 3), (14, 14, 5), (0, 16, 19), (0, 19, 9), (10, 19, 9)]
         self.v_positions = [(0, 0, 3), (8, 0, 3), (10, 0, 3), (18, 0, 3), (2, 2, 3), (4, 2, 18), (6, 2, 3), (12, 2, 3),
-                       (14, 2, 18), (16, 2, 3), (0, 4, 3),
-                       (8, 4, 3), (10, 4, 3), (18, 4, 3), (6, 6, 7), (12, 6, 7), (8, 12, 3), (10, 12, 3), (0, 14, 6),
-                       (6, 14, 3), (12, 14, 3),
-                       (18, 14, 6), (8, 16, 4), (10, 16, 4)]
-        # later pull in these positions from file or something to build new levels.
+                            (14, 2, 18), (16, 2, 3), (0, 4, 3), (8, 4, 3), (10, 4, 3), (18, 4, 3), (6, 6, 7),
+                            (12, 6, 7), (8, 12, 3), (10, 12, 3), (0, 14, 6), (6, 14, 3), (12, 14, 3), (18, 14, 6),
+                            (8, 16, 4), (10, 16, 4)]
+        self.h_exclude_dots = [(-1, 10), (12, 10)]      # x,y position of h_track that shouldn't have dots
+        self.v_exclude_dots = []                        # x,y position of v_track that shouldn't have dots
+        self.super_dots = [(0, 1), (18, 1), (0, 18),
+                           (18, 18)]    # positions of super dots
+
+    def fill_grid(self):
+        # Draw out the grid based on h_positions and v_positions.
+
+        for i in self.h_positions:
+            for j in range(i[2]):
+                self.grid[i[0] + j][i[1]] = "h"
+
+        for i in self.v_positions:
+            for j in range(i[2]):
+                if self.grid[i[0]][i[1]+j] == "h":
+                    self.grid[i[0]][i[1]+j] = "hv"
+                else:
+                    self.grid[i[0]][i[1]+j] = "v"
 
     def build_level(self):
         # Draw the tracks then place dots on them as well as draw the ghost house.
@@ -1179,33 +1194,48 @@ class PacGame(Widget):
         for p in self.h_positions:
             y_dot = (p[1] * self.tile) + (self.tile / 2) - 4 + self.y_marg
             x_dot = (p[0] * self.tile) + (self.tile / 2) - 4 + self.x_marg
-            if x_dot < self.x_marg:     # makes sure left portal doesn't have dots
-                x_dot += self.x_marg
+            for e in self.h_exclude_dots:
+                ey_dot = (e[1] * self.tile) + (self.tile / 2) - 4 + self.y_marg
+                ex_dot = (e[0] * self.tile) + (self.tile / 2) - 4 + self.x_marg
+                if x_dot == ex_dot and y_dot == ey_dot:
+                    x_dot += self.tile * p[2]
+                    break
+
             for i in range(p[2]):
-                # check to not draw dots around spawn area or portal tracks
-                if y_dot == (self.tile * 10) + (self.tile/2) - 4 + self.y_marg:
-                    x_dot += self.tile
-                    break;
-                if x_dot < (self.tile * 5) + self.x_marg or x_dot > (self.tile * 14) + self.x_marg or\
-                        y_dot < (self.tile * 8) + self.y_marg or y_dot > (self.tile * 14) + self.y_marg:
+                # check to not draw dots around spawn area or excluded positions
+                if x_dot <= self.x_marg or x_dot >= self.map_l + self.x_marg:  # makes sure no dots are drawn outside of the map
+                    x_dot += self.x_marg
+
+                elif x_dot < (self.tile * 5) + self.x_marg or x_dot > (self.tile * 14) + self.x_marg or\
+                        y_dot < (self.tile * 7) + self.y_marg or y_dot > (self.tile * 14) + self.y_marg:
+
                         with self.canvas:
                             Color(244, 244, 230)
                             Ellipse(pos=(x_dot, y_dot), size=(8, 8))
                             self.dots.append((x_dot, y_dot))
                             x_dot += self.tile
-                            if x_dot > 640 or x_dot > (p[0] + p[2]) * self.tile:          # keeps the portals from misplacing dots
-                                break
                 else:
                     x_dot += self.tile
 
         for p in self.v_positions:
             y_dot = (p[1] * self.tile) + (self.tile / 2) - 4 + self.y_marg
             x_dot = (p[0] * self.tile) + (self.tile / 2) - 4 + self.x_marg
+
+            for e in self.v_exclude_dots:
+                ey_dot = (e[1] * self.tile) + (self.tile / 2) - 4 + self.y_marg
+                ex_dot = (e[0] * self.tile) + (self.tile / 2) - 4 + self.x_marg
+                if x_dot == ex_dot and y_dot == ey_dot:
+                    x_dot += self.tile * p[2]
+                    break
+
             for i in range(p[2]):
+                if y_dot <= self.y_marg or y_dot >= self.y_marg + self.map_h:  # check to not draw outside of map
+                    y_dot += self.tile
+
                 # check to not draw dots around spawn
-                if (x_dot, y_dot) not in self.dots and y_dot < (self.tile * 7) + self.y_marg or\
-                                y_dot > (self.tile * 14) + self.y_marg or x_dot < (self.tile * 5) + self.x_marg or\
-                                x_dot > (self.tile * 14) + self.x_marg:
+                elif (x_dot, y_dot) not in self.dots and x_dot < (self.tile * 5) + self.x_marg or\
+                        x_dot > (self.tile * 14) + self.x_marg or y_dot < (self.tile * 7) + self.y_marg or\
+                        y_dot > (self.tile * 14) + self.y_marg:
                         with self.canvas:
                             Color(244, 244, 230)
                             Ellipse(pos=(x_dot, y_dot), size=(8, 8))
@@ -1213,21 +1243,22 @@ class PacGame(Widget):
                             y_dot += self.tile
                 else:
                     y_dot += self.tile
+
         # draw super dots
-        self.super_dots = [(self.tile, 64), (self.tile * 19, self.tile * 2), (self.tile, self.tile * 19),
-                           (self.tile * 19, self.tile * 19)]
         for i in self.super_dots:
-            self.dots.remove((i[0] + 12, i[1] + 12))
-            with self.canvas:
-                Color(244, 244, 230)
-                Ellipse(pos=(i[0] + 8, i[1] + 8), size=(16, 16))
+            if (i[0] * self.tile + (self.tile / 2) - 4 + self.x_marg, i[1] * self.tile + (self.tile / 2) - 4 + self.y_marg) not in self.dots:
+                print('Super Dot position ' + str((i[0], i[1])) + ' is not allowed.')
+            else:
+                self.dots.remove((i[0] * self.tile + (self.tile / 2) - 4 + self.x_marg, i[1] * self.tile + (self.tile / 2) - 4 + self.y_marg))
+                with self.canvas:
+                    Color(244, 244, 230)
+                    Ellipse(pos=(i[0] * self.tile + 8 + self.x_marg, i[1] * self.tile + 8 + self.y_marg), size=(16, 16))
 
 
 class PacmanApp(App):
     def build(self):
         # ordering for game initialization
         game = PacGame()
-        Window.size = (672, 704)
         Window.top = 100  # Set top position of window.
         Clock.schedule_interval(game.update, 1/60)  # Update speed for game loop.
         return game
