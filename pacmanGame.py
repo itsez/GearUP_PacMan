@@ -8,7 +8,7 @@ from kivy.graphics import Color, Ellipse, Rectangle
 
 
 class Pac(Widget):
-    speed = 2                           # must be even number
+    speed = 1                           # must be even number
     velocity = Vector(0, 0)
     rotation = 0
     start_angle = NumericProperty(-50)  # -90 = closed mouth
@@ -1101,7 +1101,6 @@ class PacGame(Widget):
                 break
         if self.dots.__len__() < 60:    # If they're close to winning speedup blinky.
             self.blinky.step = 3
-            self.blinky.speed = 2
 
     def respawn_player(self, restart=False):
         # Respawns the player and ghosts then perfroms ready check.
