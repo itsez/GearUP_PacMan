@@ -8,7 +8,7 @@ from kivy.graphics import Color, Ellipse, Rectangle
 
 
 class Pac(Widget):
-    speed = 1                           # must be even number
+    speed = 2                           # must be even number
     velocity = Vector(0, 0)
     rotation = 0
     start_angle = NumericProperty(-50)  # -90 = closed mouth
@@ -76,6 +76,14 @@ class Pac(Widget):
                     self.m_up = True
                 elif self.velocity.y == 1:
                     self.velocity.y = 0
+
+    def check_moves2(self, grid):
+        self.m_down = False
+        self.m_up = False
+        self.m_left = False
+        self.m_right = False
+
+
 
     def update_pos(self, grid):
         # Try to change direction then update position based on the velocity.
@@ -1080,25 +1088,22 @@ class PacGame(Widget):
     def check_dot_collision(self):
         # Check for any dots we are eating and remove/cover them up with a black dot to hide them.
         # Then we redraw the widgets over the black dot and increment the score.
-        for i in self.super_dots:
-            if self.pac.collide_point(i[0] * self.tile + 8 + self.x_marg, i[1] * self.tile + 8 + self.y_marg):
-                self.powered()
-                with self.canvas:
-                    Color(0, 0, 0)
-                    Ellipse(pos=(i[0] * self.tile + 8 + self.x_marg, i[1] * self.tile + 8 + self.y_marg), size=(16, 16))
-                self.score += 9
-                self.super_dots.remove(i)
-                self.redraw()
-                break
-        for i in self.dots:
-            if self.pac.collide_point(i[0] + 8, i[1] + 8):
-                self.score += 1
-                self.dots.remove(i)
-                with self.canvas:
-                    Color(0, 0, 0)
-                    Ellipse(pos=(i[0], i[1]), size=(8, 8))
-                self.redraw()
-                break
+        coor = (((self.pac.x - self.x_marg) /32),((self.pac.y - self.y_marg) /32))
+        if coor in self.super_dots:
+            self.powered()
+            with self.canvas:
+                Color(0, 0, 0)
+                Ellipse(pos=(coor[0] * self.tile + 8 + self.x_marg, coor[1] * self.tile + 8 + self.y_marg), size=(16, 16))
+            self.score += 9
+            self.super_dots.remove(coor)
+            self.redraw()
+        if coor in self.dots:
+            self.score += 1
+            self.dots.remove(coor)
+            with self.canvas:
+                Color(0, 0, 0)
+                Ellipse(pos=coor, size=(8, 8))
+            self.redraw()
         if self.dots.__len__() < 60:    # If they're close to winning speedup blinky.
             self.blinky.step = 3
 
@@ -1211,7 +1216,8 @@ class PacGame(Widget):
                         with self.canvas:
                             Color(244, 244, 230)
                             Ellipse(pos=(x_dot, y_dot), size=(8, 8))
-                            self.dots.append((x_dot, y_dot))
+                            self.dots.append((x_dot % 32, p[1]))
+                            print((x_dot % 32, p[1]))
                             x_dot += self.tile
                 else:
                     x_dot += self.tile
@@ -1238,17 +1244,18 @@ class PacGame(Widget):
                         with self.canvas:
                             Color(244, 244, 230)
                             Ellipse(pos=(x_dot, y_dot), size=(8, 8))
-                            self.dots.append((x_dot, y_dot))
+                            self.dots.append((x_dot % 32,p[1]))
+                            print((x_dot % 32,p[0]))
                             y_dot += self.tile
                 else:
                     y_dot += self.tile
 
         # draw super dots
         for i in self.super_dots:
-            if (i[0] * self.tile + (self.tile / 2) - 4 + self.x_marg, i[1] * self.tile + (self.tile / 2) - 4 + self.y_marg) not in self.dots:
+            if (i[0], i[1]) not in self.dots:
                 print('Super Dot position ' + str((i[0], i[1])) + ' is not allowed.')
             else:
-                self.dots.remove((i[0] * self.tile + (self.tile / 2) - 4 + self.x_marg, i[1] * self.tile + (self.tile / 2) - 4 + self.y_marg))
+                self.dots.remove((i[0], i[1]))
                 with self.canvas:
                     Color(244, 244, 230)
                     Ellipse(pos=(i[0] * self.tile + 8 + self.x_marg, i[1] * self.tile + 8 + self.y_marg), size=(16, 16))
@@ -1259,7 +1266,7 @@ class PacmanApp(App):
         # ordering for game initialization
         game = PacGame()
         Window.top = 100  # Set top position of window.
-        Clock.schedule_interval(game.update, 1/60)  # Update speed for game loop.
+        Clock.schedule_interval(game.update, 1/30)  # Update speed for game loop.
         return game
 
 
