@@ -8,7 +8,7 @@ from kivy.graphics import Color, Ellipse, Rectangle
 
 
 class Pac(Widget):
-    speed = 1                           # must be even number
+    speed = 2                           # must be even number
     velocity = Vector(0, 0)
     rotation = 0
     start_angle = NumericProperty(-50)  # -90 = closed mouth
@@ -106,7 +106,7 @@ class Blinky(Widget):
     velocity = Vector(1, 0)
     last_move = "right"
     color = ListProperty([.82, .24, .09])
-    scatter_timer = 100
+    scatter_timer = 300
     chase_timer = 0
     state = "scatter"
     step = 0
@@ -115,7 +115,7 @@ class Blinky(Widget):
         # Set blinky back to default settings and position.
         self.pos = self.parent.x_marg + (32 * 9), self.parent.y_marg + (32 * 12)
         self.velocity = Vector(1, 0)
-        self.scatter_timer = 100
+        self.scatter_timer = 300
         self.speed = 1
         self.last_move = "right"
         if not ate:             # If this is a restart not a respawn.
@@ -220,7 +220,7 @@ class Blinky(Widget):
             if not self.chase_timer:
                 self.step += 1
                 self.state = "scatter"
-                self.scatter_timer = 100
+                self.scatter_timer = 300
                 self.velocity = -self.velocity
         if self.last_move == "up" or self.last_move == "down":
             if pac_x < self.center_x and self.m_left:
@@ -1116,9 +1116,11 @@ class PacGame(Widget):
             self.draw_dots()
             self.score = 0
             self.dots = []
+            self.get_positions()
             self.draw_dots()
             self.status2.text = ''
             self.redraw(self.status2)
+            self.powerup = False
         self.redraw(self.status)
         self.redraw()
         self.status.text = "Ready?"
